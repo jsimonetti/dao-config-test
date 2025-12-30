@@ -249,11 +249,14 @@ def validate_entity_picker_filters(schema: Dict[str, Any], defs: Dict[str, Any])
         raise ValueError(error_msg)
 
 
-def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], defs: Dict[str, Any]) -> Dict[str, Any]:
+def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], defs: Dict[str, Any]) -> Dict[str, Any] | list[Dict[str, Any]]:
     """
-    Generate UISchema element for a single property from the root schema.
+    Generate UISchema element(s) for a single property from the root schema.
     
     Handles objects, arrays, anyOf (complex unions), $refs, and primitive types.
+    
+    For arrays with help text, returns a list: [HelpButton, Control]
+    Otherwise returns a single Control dict.
     """
     scope = f"#/properties/{prop_name}"
     
@@ -304,8 +307,17 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
     if prop_schema.get("type") == "array":
         if "items" in prop_schema and "$ref" in prop_schema["items"]:
             resolved = resolve_ref(prop_schema["items"]["$ref"], defs)
+            # Extract all relevant metadata from the array item model
             if "x-help" in resolved and "help" not in options:
                 options["help"] = resolved.get("x-help")
+            if "description" in resolved and "description" not in options:
+                options["description"] = resolved.get("description")
+            if "title" in resolved and "title" not in options:
+                options["title"] = resolved.get("title")
+            if "x-docs-url" in resolved and "docsUrl" not in options:
+                options["docsUrl"] = resolved.get("x-docs-url")
+            if "x-icon" in resolved and "icon" not in options:
+                options["icon"] = resolved.get("x-icon")
             
             # Generate detail UISchema for array items
             detail_elements = generate_detail_uischema(resolved, defs)
@@ -349,6 +361,24 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
     # Add rule if present
     if rule:
         control["rule"] = rule
+    
+    # For arrays with help text, return a list with HelpButton + Control
+    # This matches the pattern used for nested objects
+    if prop_schema.get("type") == "array" and "help" in options:
+        help_text = options["help"]
+        # Remove help from control options since we're showing it as a button
+        del options["help"]
+        
+        return [
+            {
+                "type": "HelpButton",
+                "options": {
+                    "helpText": help_text,
+                    "helpTitle": "Help"
+                }
+            },
+            control
+        ]
     
     return control
 
@@ -623,7 +653,12 @@ def main():
             for order, prop_name, prop_schema in props_list:
                 section_name, collapse_state = extract_section_info(prop_schema, defs)
                 element = generate_uischema_for_property(prop_name, prop_schema, defs)
-                controls_with_meta.append((element, section_name, collapse_state))
+                # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
+                if isinstance(element, list):
+                    for elem in element:
+                        controls_with_meta.append((elem, section_name, collapse_state))
+                else:
+                    controls_with_meta.append((element, section_name, collapse_state))
             
             # Group controls by section and create Group layouts
             group_elements = group_controls_by_section(controls_with_meta)
@@ -646,7 +681,12 @@ def main():
         for order, prop_name, prop_schema in props_list:
             section_name, collapse_state = extract_section_info(prop_schema, defs)
             element = generate_uischema_for_property(prop_name, prop_schema, defs)
-            controls_with_meta.append((element, section_name, collapse_state))
+            # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
+            if isinstance(element, list):
+                for elem in element:
+                    controls_with_meta.append((elem, section_name, collapse_state))
+            else:
+                controls_with_meta.append((element, section_name, collapse_state))
         
         # Group controls by section and create Group layouts
         group_elements = group_controls_by_section(controls_with_meta)

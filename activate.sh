@@ -8,11 +8,12 @@ source .venv/bin/activate
 source .nodeenv/bin/activate
 
 # Navigate to frontend project
-cd config-gui
+cd config-gui-poc
 
 echo "✅ Both environments activated. Ready to work!"
 echo ""
 echo "Available commands:"
-echo "  npm run dev    - Start development server"
-echo "  npm run build  - Build for production"
-echo "  npm install    - Install dependencies"
+echo "  npm run dev                    - Start development server"
+echo "  npm run build                  - Build for production"
+echo "  npm install                    - Install dependencies"
+echo "  python ../generate_uischema.py - Generate UISchema"

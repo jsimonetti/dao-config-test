@@ -315,7 +315,7 @@
           "description": "DC-coupled solar panels attached to this battery",
           "title": "Solar",
           "x-help": "Optional: Configure DC-coupled solar panels directly connected to this battery inverter. DC coupling is more efficient than AC coupling. Leave empty for AC-coupled or grid-only batteries.",
-          "x-ui-section": "Power Configuration",
+          "x-ui-section": "Battery Connected Solar",
           "items": {
             "$ref": "#/$defs/SolarConfig"
           },
@@ -1119,7 +1119,6 @@
           "title": "Max Power",
           "type": "number",
           "x-help": "Maximum power available from grid connection in kilowatts. Based on your main fuse/circuit breaker rating. Typical residential: 1-phase=7.4kW (32A), 3-phase=17kW (25A) or 25kW (35A). Prevents optimization from exceeding grid capacity.",
-          "x-ui-section": "Grid",
           "x-unit": "kW",
           "x-validation-hint": "Must be > 0, typical 7-25 kW for residential"
         }
@@ -1129,7 +1128,7 @@
       "x-docs-url": "https://github.com/corneel27/day-ahead/wiki/Grid-Configuration",
       "x-help": "# Grid Connection Configuration\n\nDefine electrical grid connection limits to prevent overload.\n\n## Maximum Grid Power\n\nBased on your main fuse/circuit breaker:\n- **1-phase 32A**: 7.4 kW (32A \u00d7 230V)\n- **3-phase 25A**: 17.3 kW (25A \u00d7 230V \u00d7 3)\n- **3-phase 35A**: 24.2 kW (35A \u00d7 230V \u00d7 3)\n\n## Why This Matters\n\nOptimizer ensures combined consumption never exceeds this limit:\n- Prevents main fuse from tripping\n- Ensures legal compliance with grid connection\n- Coordinates multiple high-power devices (EV, heat pump, boiler)\n\n## Tips\n\n- Check your electrical panel for fuse/breaker rating\n- Account for baseload when calculating available power\n- System will prioritize loads within this constraint\n- Consider upgrade if frequently hitting limits\n",
       "x-icon": "transmission-tower",
-      "x-order": 12,
+      "x-order": 999,
       "x-ui-group": "Energy"
     },
     "HADatabaseConfig": {
@@ -2500,7 +2499,8 @@
     },
     "grid": {
       "$ref": "#/$defs/GridConfig",
-      "description": "Grid connection settings"
+      "description": "Grid connection settings",
+      "x-ui-section": "Grid"
     },
     "history": {
       "$ref": "#/$defs/HistoryConfig",
@@ -2516,7 +2516,8 @@
         "$ref": "#/$defs/BatteryConfig"
       },
       "title": "Battery",
-      "type": "array"
+      "type": "array",
+      "x-ui-section": "Batteries"
     },
     "solar": {
       "description": "Solar panel configurations",
@@ -2524,7 +2525,8 @@
         "$ref": "#/$defs/SolarConfig"
       },
       "title": "Solar",
-      "type": "array"
+      "type": "array",
+      "x-ui-section": "Solar Panels"
     },
     "electric vehicle": {
       "description": "Electric vehicle configurations",

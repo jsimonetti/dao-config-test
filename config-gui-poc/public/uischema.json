@@ -118,423 +118,345 @@
       "label": "Energy",
       "elements": [
         {
-          "type": "Control",
-          "scope": "#/properties/battery",
-          "options": {
-            "description": "Battery configurations",
-            "help": "# Battery Configuration\n\nConfigure your home battery storage system for optimal energy management and cost savings.\n\n## Key Settings\n- **Capacity**: Total storage capacity in kWh\n- **SOC Limits**: Upper and lower charge limits to protect battery health\n- **Power Stages**: Define charging/discharging efficiency curves\n- **Control Entities**: Home Assistant entities to control the battery\n\n## Tips\n- Set upper_limit to 80-90% for longer battery life\n- Configure charge/discharge stages for accurate optimization\n- Monitor battery degradation with cycle_cost setting\n",
-            "detail": {
-              "type": "VerticalLayout",
-              "elements": [
-                {
-                  "type": "Group",
-                  "label": "Power Configuration",
+          "type": "Group",
+          "label": "Batteries",
+          "elements": [
+            {
+              "type": "HelpButton",
+              "options": {
+                "helpText": "# Battery Configuration\n\nConfigure your home battery storage system for optimal energy management and cost savings.\n\n## Key Settings\n- **Capacity**: Total storage capacity in kWh\n- **SOC Limits**: Upper and lower charge limits to protect battery health\n- **Power Stages**: Define charging/discharging efficiency curves\n- **Control Entities**: Home Assistant entities to control the battery\n\n## Tips\n- Set upper_limit to 80-90% for longer battery life\n- Configure charge/discharge stages for accurate optimization\n- Monitor battery degradation with cycle_cost setting\n",
+                "helpTitle": "Help"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/battery",
+              "options": {
+                "description": "Battery configurations",
+                "title": "BatteryConfig",
+                "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Battery-Configuration",
+                "icon": "battery-charging",
+                "detail": {
+                  "type": "VerticalLayout",
                   "elements": [
                     {
-                      "type": "HelpButton",
-                      "options": {
-                        "helpText": "# Battery Configuration\n\nConfigure your home battery storage system for optimal energy management and cost savings.\n\n## Key Settings\n- **Capacity**: Total storage capacity in kWh\n- **SOC Limits**: Upper and lower charge limits to protect battery health\n- **Power Stages**: Define charging/discharging efficiency curves\n- **Control Entities**: Home Assistant entities to control the battery\n\n## Tips\n- Set upper_limit to 80-90% for longer battery life\n- Configure charge/discharge stages for accurate optimization\n- Monitor battery degradation with cycle_cost setting\n",
-                        "helpTitle": "Help"
-                      }
+                      "type": "Group",
+                      "label": "Battery Connected Solar",
+                      "elements": [
+                        {
+                          "type": "HelpButton",
+                          "options": {
+                            "helpText": "# Battery Configuration\n\nConfigure your home battery storage system for optimal energy management and cost savings.\n\n## Key Settings\n- **Capacity**: Total storage capacity in kWh\n- **SOC Limits**: Upper and lower charge limits to protect battery health\n- **Power Stages**: Define charging/discharging efficiency curves\n- **Control Entities**: Home Assistant entities to control the battery\n\n## Tips\n- Set upper_limit to 80-90% for longer battery life\n- Configure charge/discharge stages for accurate optimization\n- Monitor battery degradation with cycle_cost setting\n",
+                            "helpTitle": "Help"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/solar",
+                          "options": {
+                            "help": "Optional: Configure DC-coupled solar panels directly connected to this battery inverter. DC coupling is more efficient than AC coupling. Leave empty for AC-coupled or grid-only batteries.",
+                            "description": "DC-coupled solar panels attached to this battery"
+                          }
+                        }
+                      ]
                     },
                     {
-                      "type": "Control",
-                      "scope": "#/properties/name",
-                      "options": {
-                        "help": "Unique name to identify this battery in logs and reports. Use a descriptive name like 'Home Battery' or 'Garage Battery'.",
-                        "description": "Battery name/identifier"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_actual_level",
-                      "options": {
-                        "help": "Home Assistant entity that reports the current State of Charge (SOC) percentage. Usually a sensor from your battery inverter.",
-                        "description": "HA entity for current battery SOC",
-                        "unit": "%",
-                        "widget": "entity-picker",
-                        "widgetFilter": "sensor"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/capacity",
-                      "options": {
-                        "help": "Total usable energy storage capacity of your battery. Check your battery specifications. For multiple batteries, sum their capacities.",
-                        "description": "Battery capacity in kWh",
-                        "unit": "kWh",
-                        "validationHint": "Must be greater than 0"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/upper_limit",
-                      "options": {
-                        "help": "Maximum State of Charge in percent. Battery will never charge above this level. Supports FlexValue pattern: use integer or HA entity ID.",
-                        "description": "Maximum SOC % (can be HA entity)",
-                        "unit": "%",
-                        "widget": "entity-picker-or-number",
-                        "widgetFilter": "sensor,input_number",
-                        "validationHint": "0-100%, protects battery from overcharge"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/lower_limit",
-                      "options": {
-                        "help": "Minimum State of Charge in percent. Battery will never discharge below this level. Supports FlexValue pattern: use integer or HA entity ID.",
-                        "description": "Minimum SOC % (can be HA entity)",
-                        "unit": "%",
-                        "widget": "entity-picker-or-number",
-                        "widgetFilter": "sensor,input_number",
-                        "validationHint": "0-100%, protects battery from deep discharge"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/optimal_lower_level",
-                      "options": {
-                        "help": "Target SOC level for cost optimization. System will prefer this level over minimum. Supports FlexValue pattern.",
-                        "description": "Optimal lower SOC % for cost optimization",
-                        "unit": "%",
-                        "widget": "entity-picker-or-number",
-                        "widgetFilter": "sensor,input_number",
-                        "validationHint": "Optional, should be >= lower_limit"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_min_soc_end_opt",
-                      "options": {
-                        "help": "Optional: Home Assistant entity specifying minimum battery level required at end of optimization window. Useful for ensuring battery charge overnight.",
-                        "description": "HA entity for minimum SOC at end of optimization period",
-                        "widget": "entity-picker",
-                        "widgetFilter": "sensor,input_number"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_max_soc_end_opt",
-                      "options": {
-                        "help": "Optional: Home Assistant entity specifying maximum battery level at end of optimization window. Rarely needed but available for advanced scenarios.",
-                        "description": "HA entity for maximum SOC at end of optimization period",
-                        "widget": "entity-picker",
-                        "widgetFilter": "sensor,input_number"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/charge_stages",
-                      "options": {
-                        "help": "Power stages for charging with corresponding efficiencies. Defines charge curve from AC grid to battery. At least one stage required.",
-                        "description": "Charge power/efficiency curve",
-                        "validationHint": "At least 1 stage required, ordered by power"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/discharge_stages",
-                      "options": {
-                        "help": "Power stages for discharging with corresponding efficiencies. Defines discharge curve from battery to AC grid. At least one stage required.",
-                        "description": "Discharge power/efficiency curve",
-                        "validationHint": "At least 1 stage required, ordered by power"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/reduced_hours",
-                      "options": {
-                        "help": "Optional: Restrict battery power during specific hours. Example: {'22': 1000, '23': 1000} limits to 1000W from 22:00-23:59. Useful for noise reduction at night.",
-                        "description": "Hour -> max power mapping for reduced power hours",
-                        "validationHint": "Keys are hour strings (0-23), values are watts"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/minimum_power",
-                      "options": {
-                        "help": "Minimum power threshold in watts. Operations below this power level will be rounded to zero. Prevents inefficient micro-charging/discharging.",
-                        "description": "Minimum power in watts",
-                        "unit": "W",
-                        "validationHint": "Must be >= 0, typically 50-200W"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/dc_to_bat_efficiency",
-                      "options": {
-                        "help": "Efficiency of DC-coupled solar to battery conversion. Typically 0.95-0.98 for modern DC-coupled systems. Only relevant if DC-coupled solar is configured.",
-                        "description": "DC to battery efficiency",
-                        "unit": "ratio",
-                        "validationHint": "0.0-1.0, typically 0.95-0.98"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/dc_to_bat_max_power",
-                      "options": {
-                        "help": "Maximum power for DC-coupled solar charging in watts. Determines how much DC solar power can flow directly to battery.",
-                        "description": "DC to battery max power in watts",
-                        "unit": "W",
-                        "validationHint": "Must be > 0"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/bat_to_dc_efficiency",
-                      "options": {
-                        "help": "Efficiency of battery to DC bus conversion. Typically 0.95-0.98. Only relevant for DC-coupled loads or reverse DC flow scenarios.",
-                        "description": "Battery to DC efficiency",
-                        "unit": "ratio",
-                        "validationHint": "0.0-1.0, typically 0.95-0.98"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/bat_to_dc_max_power",
-                      "options": {
-                        "help": "Maximum power for battery to DC bus conversion in watts. Rarely used in typical residential setups.",
-                        "description": "Battery to DC max power in watts",
-                        "unit": "W",
-                        "validationHint": "Must be > 0"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/cycle_cost",
-                      "options": {
-                        "help": "Degradation cost per full charge-discharge cycle in euros. Used to factor battery wear into optimization. Calculate as: (battery_cost / warranted_cycles). Example: \u20ac5000 battery with 6000 cycles = \u20ac0.83/cycle.",
-                        "description": "Cost per battery cycle in euros",
-                        "unit": "\u20ac",
-                        "validationHint": "Must be >= 0, typically \u20ac0.50-\u20ac1.50 per cycle"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_set_power_feedin",
-                      "options": {
-                        "help": "Optional: Home Assistant entity to control grid feed-in power. Used by scheduler to execute optimized battery operations.",
-                        "description": "HA entity to set power feed-in to grid",
-                        "widget": "entity-picker",
-                        "widgetFilter": "number,input_number"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_set_operating_mode",
-                      "options": {
-                        "help": "Optional: Home Assistant entity to control battery operating mode (e.g., auto/manual/off). System will switch modes as needed for optimization.",
-                        "description": "HA entity to set battery operating mode",
-                        "widget": "entity-picker",
-                        "widgetFilter": "select,input_select,switch"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_set_operating_mode_on",
-                      "options": {
-                        "help": "Value to send to operating mode entity for 'ON' state. Example: 'auto', 'enabled', 'on'. Must match actual entity values.",
-                        "description": "Value for operating mode ON"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_set_operating_mode_off",
-                      "options": {
-                        "help": "Value to send to operating mode entity for 'OFF' state. Example: 'manual', 'disabled', 'off'. Must match actual entity values.",
-                        "description": "Value for operating mode OFF"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_stop_inverter",
-                      "options": {
-                        "help": "Optional: Home Assistant entity to emergency stop the battery inverter. Rarely needed but available for safety scenarios.",
-                        "description": "HA entity to stop inverter",
-                        "widget": "entity-picker",
-                        "widgetFilter": "switch,button"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_balance_switch",
-                      "options": {
-                        "help": "Optional: Home Assistant entity to enable/disable grid balancing mode. Used for frequency regulation participation or grid services.",
-                        "description": "HA entity for grid balancing switch",
-                        "widget": "entity-picker",
-                        "widgetFilter": "switch"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_from_battery",
-                      "options": {
-                        "help": "Optional: Home Assistant sensor showing current power flow from battery in watts. Used for monitoring and validation.",
-                        "description": "HA entity for power from battery",
-                        "unit": "W",
-                        "widget": "entity-picker",
-                        "widgetFilter": "sensor"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_from_pv",
-                      "options": {
-                        "help": "Optional: Home Assistant sensor showing current DC-coupled solar power in watts. Only relevant for DC-coupled solar installations.",
-                        "description": "HA entity for power from PV",
-                        "unit": "W",
-                        "widget": "entity-picker",
-                        "widgetFilter": "sensor"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_from_ac",
-                      "options": {
-                        "help": "Optional: Home Assistant sensor showing current AC grid power flow in watts. Used for monitoring overall system balance.",
-                        "description": "HA entity for power from AC",
-                        "unit": "W",
-                        "widget": "entity-picker",
-                        "widgetFilter": "sensor"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity_calculated_soc",
-                      "options": {
-                        "help": "Optional: Home Assistant sensor for calculated State of Charge. System can compute SOC from power flows if BMS sensor is unavailable.",
-                        "description": "HA entity for calculated SOC",
-                        "unit": "%",
-                        "widget": "entity-picker",
-                        "widgetFilter": "sensor"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/solar",
-                      "options": {
-                        "help": "Optional: Configure DC-coupled solar panels directly connected to this battery inverter. DC coupling is more efficient than AC coupling. Leave empty for AC-coupled or grid-only batteries.",
-                        "description": "DC-coupled solar panels attached to this battery"
-                      }
+                      "type": "Group",
+                      "label": "Power Configuration",
+                      "elements": [
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/name",
+                          "options": {
+                            "help": "Unique name to identify this battery in logs and reports. Use a descriptive name like 'Home Battery' or 'Garage Battery'.",
+                            "description": "Battery name/identifier"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_actual_level",
+                          "options": {
+                            "help": "Home Assistant entity that reports the current State of Charge (SOC) percentage. Usually a sensor from your battery inverter.",
+                            "description": "HA entity for current battery SOC",
+                            "unit": "%",
+                            "widget": "entity-picker",
+                            "widgetFilter": "sensor"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/capacity",
+                          "options": {
+                            "help": "Total usable energy storage capacity of your battery. Check your battery specifications. For multiple batteries, sum their capacities.",
+                            "description": "Battery capacity in kWh",
+                            "unit": "kWh",
+                            "validationHint": "Must be greater than 0"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/upper_limit",
+                          "options": {
+                            "help": "Maximum State of Charge in percent. Battery will never charge above this level. Supports FlexValue pattern: use integer or HA entity ID.",
+                            "description": "Maximum SOC % (can be HA entity)",
+                            "unit": "%",
+                            "widget": "entity-picker-or-number",
+                            "widgetFilter": "sensor,input_number",
+                            "validationHint": "0-100%, protects battery from overcharge"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/lower_limit",
+                          "options": {
+                            "help": "Minimum State of Charge in percent. Battery will never discharge below this level. Supports FlexValue pattern: use integer or HA entity ID.",
+                            "description": "Minimum SOC % (can be HA entity)",
+                            "unit": "%",
+                            "widget": "entity-picker-or-number",
+                            "widgetFilter": "sensor,input_number",
+                            "validationHint": "0-100%, protects battery from deep discharge"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/optimal_lower_level",
+                          "options": {
+                            "help": "Target SOC level for cost optimization. System will prefer this level over minimum. Supports FlexValue pattern.",
+                            "description": "Optimal lower SOC % for cost optimization",
+                            "unit": "%",
+                            "widget": "entity-picker-or-number",
+                            "widgetFilter": "sensor,input_number",
+                            "validationHint": "Optional, should be >= lower_limit"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_min_soc_end_opt",
+                          "options": {
+                            "help": "Optional: Home Assistant entity specifying minimum battery level required at end of optimization window. Useful for ensuring battery charge overnight.",
+                            "description": "HA entity for minimum SOC at end of optimization period",
+                            "widget": "entity-picker",
+                            "widgetFilter": "sensor,input_number"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_max_soc_end_opt",
+                          "options": {
+                            "help": "Optional: Home Assistant entity specifying maximum battery level at end of optimization window. Rarely needed but available for advanced scenarios.",
+                            "description": "HA entity for maximum SOC at end of optimization period",
+                            "widget": "entity-picker",
+                            "widgetFilter": "sensor,input_number"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/charge_stages",
+                          "options": {
+                            "help": "Power stages for charging with corresponding efficiencies. Defines charge curve from AC grid to battery. At least one stage required.",
+                            "description": "Charge power/efficiency curve",
+                            "validationHint": "At least 1 stage required, ordered by power"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/discharge_stages",
+                          "options": {
+                            "help": "Power stages for discharging with corresponding efficiencies. Defines discharge curve from battery to AC grid. At least one stage required.",
+                            "description": "Discharge power/efficiency curve",
+                            "validationHint": "At least 1 stage required, ordered by power"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/reduced_hours",
+                          "options": {
+                            "help": "Optional: Restrict battery power during specific hours. Example: {'22': 1000, '23': 1000} limits to 1000W from 22:00-23:59. Useful for noise reduction at night.",
+                            "description": "Hour -> max power mapping for reduced power hours",
+                            "validationHint": "Keys are hour strings (0-23), values are watts"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/minimum_power",
+                          "options": {
+                            "help": "Minimum power threshold in watts. Operations below this power level will be rounded to zero. Prevents inefficient micro-charging/discharging.",
+                            "description": "Minimum power in watts",
+                            "unit": "W",
+                            "validationHint": "Must be >= 0, typically 50-200W"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/dc_to_bat_efficiency",
+                          "options": {
+                            "help": "Efficiency of DC-coupled solar to battery conversion. Typically 0.95-0.98 for modern DC-coupled systems. Only relevant if DC-coupled solar is configured.",
+                            "description": "DC to battery efficiency",
+                            "unit": "ratio",
+                            "validationHint": "0.0-1.0, typically 0.95-0.98"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/dc_to_bat_max_power",
+                          "options": {
+                            "help": "Maximum power for DC-coupled solar charging in watts. Determines how much DC solar power can flow directly to battery.",
+                            "description": "DC to battery max power in watts",
+                            "unit": "W",
+                            "validationHint": "Must be > 0"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/bat_to_dc_efficiency",
+                          "options": {
+                            "help": "Efficiency of battery to DC bus conversion. Typically 0.95-0.98. Only relevant for DC-coupled loads or reverse DC flow scenarios.",
+                            "description": "Battery to DC efficiency",
+                            "unit": "ratio",
+                            "validationHint": "0.0-1.0, typically 0.95-0.98"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/bat_to_dc_max_power",
+                          "options": {
+                            "help": "Maximum power for battery to DC bus conversion in watts. Rarely used in typical residential setups.",
+                            "description": "Battery to DC max power in watts",
+                            "unit": "W",
+                            "validationHint": "Must be > 0"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/cycle_cost",
+                          "options": {
+                            "help": "Degradation cost per full charge-discharge cycle in euros. Used to factor battery wear into optimization. Calculate as: (battery_cost / warranted_cycles). Example: \u20ac5000 battery with 6000 cycles = \u20ac0.83/cycle.",
+                            "description": "Cost per battery cycle in euros",
+                            "unit": "\u20ac",
+                            "validationHint": "Must be >= 0, typically \u20ac0.50-\u20ac1.50 per cycle"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_set_power_feedin",
+                          "options": {
+                            "help": "Optional: Home Assistant entity to control grid feed-in power. Used by scheduler to execute optimized battery operations.",
+                            "description": "HA entity to set power feed-in to grid",
+                            "widget": "entity-picker",
+                            "widgetFilter": "number,input_number"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_set_operating_mode",
+                          "options": {
+                            "help": "Optional: Home Assistant entity to control battery operating mode (e.g., auto/manual/off). System will switch modes as needed for optimization.",
+                            "description": "HA entity to set battery operating mode",
+                            "widget": "entity-picker",
+                            "widgetFilter": "select,input_select,switch"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_set_operating_mode_on",
+                          "options": {
+                            "help": "Value to send to operating mode entity for 'ON' state. Example: 'auto', 'enabled', 'on'. Must match actual entity values.",
+                            "description": "Value for operating mode ON"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_set_operating_mode_off",
+                          "options": {
+                            "help": "Value to send to operating mode entity for 'OFF' state. Example: 'manual', 'disabled', 'off'. Must match actual entity values.",
+                            "description": "Value for operating mode OFF"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_stop_inverter",
+                          "options": {
+                            "help": "Optional: Home Assistant entity to emergency stop the battery inverter. Rarely needed but available for safety scenarios.",
+                            "description": "HA entity to stop inverter",
+                            "widget": "entity-picker",
+                            "widgetFilter": "switch,button"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_balance_switch",
+                          "options": {
+                            "help": "Optional: Home Assistant entity to enable/disable grid balancing mode. Used for frequency regulation participation or grid services.",
+                            "description": "HA entity for grid balancing switch",
+                            "widget": "entity-picker",
+                            "widgetFilter": "switch"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_from_battery",
+                          "options": {
+                            "help": "Optional: Home Assistant sensor showing current power flow from battery in watts. Used for monitoring and validation.",
+                            "description": "HA entity for power from battery",
+                            "unit": "W",
+                            "widget": "entity-picker",
+                            "widgetFilter": "sensor"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_from_pv",
+                          "options": {
+                            "help": "Optional: Home Assistant sensor showing current DC-coupled solar power in watts. Only relevant for DC-coupled solar installations.",
+                            "description": "HA entity for power from PV",
+                            "unit": "W",
+                            "widget": "entity-picker",
+                            "widgetFilter": "sensor"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_from_ac",
+                          "options": {
+                            "help": "Optional: Home Assistant sensor showing current AC grid power flow in watts. Used for monitoring overall system balance.",
+                            "description": "HA entity for power from AC",
+                            "unit": "W",
+                            "widget": "entity-picker",
+                            "widgetFilter": "sensor"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity_calculated_soc",
+                          "options": {
+                            "help": "Optional: Home Assistant sensor for calculated State of Charge. System can compute SOC from power flows if BMS sensor is unavailable.",
+                            "description": "HA entity for calculated SOC",
+                            "unit": "%",
+                            "widget": "entity-picker",
+                            "widgetFilter": "sensor"
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
-              ]
+              }
             }
-          }
+          ]
         },
         {
-          "type": "Control",
-          "scope": "#/properties/solar",
-          "options": {
-            "description": "Solar panel configurations",
-            "help": "# Solar Panel Configuration\n\nConfigure your solar panel installations for accurate production forecasting.\n\n## Configuration Options\n\n### Simple Configuration\nFor panels all facing the same direction, use the flat config:\n- **tilt**: Panel angle (0-90\u00b0)\n- **orientation**: Direction panels face (0=south)\n- **capacity**: Total capacity in kWp\n- **yield**: Efficiency factor (0.8-0.9)\n\n### Advanced Configuration (Multiple Strings)\nFor panels facing different directions, use the 'strings' configuration:\n- Each string can have different tilt and orientation\n- Allows accurate modeling of complex installations\n- Example: Panels on both south and east-facing roofs\n\n## Tips\n- Use strings configuration for multi-directional installations\n- Include all inverter and cable losses in yield factor\n- Account for shading in yield factor\n",
-            "detail": {
-              "type": "VerticalLayout",
-              "elements": [
-                {
-                  "type": "Group",
-                  "label": "Panel Orientation",
+          "type": "Group",
+          "label": "Grid",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/grid",
+              "options": {
+                "description": "Grid connection settings",
+                "help": "# Grid Connection Configuration\n\nDefine electrical grid connection limits to prevent overload.\n\n## Maximum Grid Power\n\nBased on your main fuse/circuit breaker:\n- **1-phase 32A**: 7.4 kW (32A \u00d7 230V)\n- **3-phase 25A**: 17.3 kW (25A \u00d7 230V \u00d7 3)\n- **3-phase 35A**: 24.2 kW (35A \u00d7 230V \u00d7 3)\n\n## Why This Matters\n\nOptimizer ensures combined consumption never exceeds this limit:\n- Prevents main fuse from tripping\n- Ensures legal compliance with grid connection\n- Coordinates multiple high-power devices (EV, heat pump, boiler)\n\n## Tips\n\n- Check your electrical panel for fuse/breaker rating\n- Account for baseload when calculating available power\n- System will prioritize loads within this constraint\n- Consider upgrade if frequently hitting limits\n",
+                "detail": {
+                  "type": "VerticalLayout",
                   "elements": [
-                    {
-                      "type": "HelpButton",
-                      "options": {
-                        "helpText": "# Solar Panel Configuration\n\nConfigure your solar panel installations for accurate production forecasting.\n\n## Configuration Options\n\n### Simple Configuration\nFor panels all facing the same direction, use the flat config:\n- **tilt**: Panel angle (0-90\u00b0)\n- **orientation**: Direction panels face (0=south)\n- **capacity**: Total capacity in kWp\n- **yield**: Efficiency factor (0.8-0.9)\n\n### Advanced Configuration (Multiple Strings)\nFor panels facing different directions, use the 'strings' configuration:\n- Each string can have different tilt and orientation\n- Allows accurate modeling of complex installations\n- Example: Panels on both south and east-facing roofs\n\n## Tips\n- Use strings configuration for multi-directional installations\n- Include all inverter and cable losses in yield factor\n- Account for shading in yield factor\n",
-                        "helpTitle": "Help"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/name",
-                      "options": {
-                        "help": "Unique name for this solar installation. Use descriptive names like 'Roof South' or 'Garage East' for multiple installations.",
-                        "description": "Solar installation name/identifier"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/entity pv switch",
-                      "options": {
-                        "help": "Optional Home Assistant entity to enable or disable this solar installation in the optimization. Useful for maintenance or testing.",
-                        "description": "HA entity to enable/disable this solar installation",
-                        "widget": "entity-picker",
-                        "widgetFilter": "switch"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/tilt",
-                      "options": {
-                        "help": "Panel tilt angle for simple configuration. Use this OR 'strings', not both. Leave empty if using strings configuration.",
-                        "description": "Panel tilt (for single installation)",
-                        "unit": "degrees",
-                        "validationHint": "0-90 degrees, leave empty when using strings"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/orientation",
-                      "options": {
-                        "help": "Panel orientation for simple configuration. Use this OR 'strings', not both. Leave empty if using strings configuration.",
-                        "description": "Panel orientation (for single installation)",
-                        "unit": "degrees",
-                        "validationHint": "-180 to 180 degrees, leave empty when using strings"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/capacity",
-                      "options": {
-                        "help": "Total capacity for simple configuration. Use this OR 'strings', not both. Leave empty if using strings configuration.",
-                        "description": "Installed capacity (for single installation)",
-                        "unit": "kWp",
-                        "validationHint": "Greater than 0, leave empty when using strings"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/yield",
-                      "options": {
-                        "help": "Yield factor for simple configuration. Use this OR 'strings', not both. Leave empty if using strings configuration.",
-                        "description": "Yield factor (for single installation)",
-                        "unit": "ratio",
-                        "validationHint": "Greater than 0, typically 0.8-0.9, leave empty when using strings"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/strings",
-                      "options": {
-                        "help": "Advanced: Configure multiple strings for panels with different orientations or tilts. Use this OR flat config (tilt/orientation/capacity/yield), not both.",
-                        "description": "Multiple panel strings with different configurations"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/grid",
-          "options": {
-            "description": "Grid connection settings",
-            "help": "# Grid Connection Configuration\n\nDefine electrical grid connection limits to prevent overload.\n\n## Maximum Grid Power\n\nBased on your main fuse/circuit breaker:\n- **1-phase 32A**: 7.4 kW (32A \u00d7 230V)\n- **3-phase 25A**: 17.3 kW (25A \u00d7 230V \u00d7 3)\n- **3-phase 35A**: 24.2 kW (35A \u00d7 230V \u00d7 3)\n\n## Why This Matters\n\nOptimizer ensures combined consumption never exceeds this limit:\n- Prevents main fuse from tripping\n- Ensures legal compliance with grid connection\n- Coordinates multiple high-power devices (EV, heat pump, boiler)\n\n## Tips\n\n- Check your electrical panel for fuse/breaker rating\n- Account for baseload when calculating available power\n- System will prioritize loads within this constraint\n- Consider upgrade if frequently hitting limits\n",
-            "detail": {
-              "type": "VerticalLayout",
-              "elements": [
-                {
-                  "type": "Group",
-                  "label": "Grid",
-                  "elements": [
-                    {
-                      "type": "HelpButton",
-                      "options": {
-                        "helpText": "# Grid Connection Configuration\n\nDefine electrical grid connection limits to prevent overload.\n\n## Maximum Grid Power\n\nBased on your main fuse/circuit breaker:\n- **1-phase 32A**: 7.4 kW (32A \u00d7 230V)\n- **3-phase 25A**: 17.3 kW (25A \u00d7 230V \u00d7 3)\n- **3-phase 35A**: 24.2 kW (35A \u00d7 230V \u00d7 3)\n\n## Why This Matters\n\nOptimizer ensures combined consumption never exceeds this limit:\n- Prevents main fuse from tripping\n- Ensures legal compliance with grid connection\n- Coordinates multiple high-power devices (EV, heat pump, boiler)\n\n## Tips\n\n- Check your electrical panel for fuse/breaker rating\n- Account for baseload when calculating available power\n- System will prioritize loads within this constraint\n- Consider upgrade if frequently hitting limits\n",
-                        "helpTitle": "Help"
-                      }
-                    },
                     {
                       "type": "Control",
                       "scope": "#/properties/max_power",
@@ -547,9 +469,116 @@
                     }
                   ]
                 }
-              ]
+              }
             }
-          }
+          ]
+        },
+        {
+          "type": "Group",
+          "label": "Solar Panels",
+          "elements": [
+            {
+              "type": "HelpButton",
+              "options": {
+                "helpText": "# Solar Panel Configuration\n\nConfigure your solar panel installations for accurate production forecasting.\n\n## Configuration Options\n\n### Simple Configuration\nFor panels all facing the same direction, use the flat config:\n- **tilt**: Panel angle (0-90\u00b0)\n- **orientation**: Direction panels face (0=south)\n- **capacity**: Total capacity in kWp\n- **yield**: Efficiency factor (0.8-0.9)\n\n### Advanced Configuration (Multiple Strings)\nFor panels facing different directions, use the 'strings' configuration:\n- Each string can have different tilt and orientation\n- Allows accurate modeling of complex installations\n- Example: Panels on both south and east-facing roofs\n\n## Tips\n- Use strings configuration for multi-directional installations\n- Include all inverter and cable losses in yield factor\n- Account for shading in yield factor\n",
+                "helpTitle": "Help"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/solar",
+              "options": {
+                "description": "Solar panel configurations",
+                "title": "SolarConfig",
+                "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Solar-Configuration",
+                "icon": "solar-panel",
+                "detail": {
+                  "type": "VerticalLayout",
+                  "elements": [
+                    {
+                      "type": "Group",
+                      "label": "Panel Orientation",
+                      "elements": [
+                        {
+                          "type": "HelpButton",
+                          "options": {
+                            "helpText": "# Solar Panel Configuration\n\nConfigure your solar panel installations for accurate production forecasting.\n\n## Configuration Options\n\n### Simple Configuration\nFor panels all facing the same direction, use the flat config:\n- **tilt**: Panel angle (0-90\u00b0)\n- **orientation**: Direction panels face (0=south)\n- **capacity**: Total capacity in kWp\n- **yield**: Efficiency factor (0.8-0.9)\n\n### Advanced Configuration (Multiple Strings)\nFor panels facing different directions, use the 'strings' configuration:\n- Each string can have different tilt and orientation\n- Allows accurate modeling of complex installations\n- Example: Panels on both south and east-facing roofs\n\n## Tips\n- Use strings configuration for multi-directional installations\n- Include all inverter and cable losses in yield factor\n- Account for shading in yield factor\n",
+                            "helpTitle": "Help"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/name",
+                          "options": {
+                            "help": "Unique name for this solar installation. Use descriptive names like 'Roof South' or 'Garage East' for multiple installations.",
+                            "description": "Solar installation name/identifier"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity pv switch",
+                          "options": {
+                            "help": "Optional Home Assistant entity to enable or disable this solar installation in the optimization. Useful for maintenance or testing.",
+                            "description": "HA entity to enable/disable this solar installation",
+                            "widget": "entity-picker",
+                            "widgetFilter": "switch"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/tilt",
+                          "options": {
+                            "help": "Panel tilt angle for simple configuration. Use this OR 'strings', not both. Leave empty if using strings configuration.",
+                            "description": "Panel tilt (for single installation)",
+                            "unit": "degrees",
+                            "validationHint": "0-90 degrees, leave empty when using strings"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/orientation",
+                          "options": {
+                            "help": "Panel orientation for simple configuration. Use this OR 'strings', not both. Leave empty if using strings configuration.",
+                            "description": "Panel orientation (for single installation)",
+                            "unit": "degrees",
+                            "validationHint": "-180 to 180 degrees, leave empty when using strings"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/capacity",
+                          "options": {
+                            "help": "Total capacity for simple configuration. Use this OR 'strings', not both. Leave empty if using strings configuration.",
+                            "description": "Installed capacity (for single installation)",
+                            "unit": "kWp",
+                            "validationHint": "Greater than 0, leave empty when using strings"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/yield",
+                          "options": {
+                            "help": "Yield factor for simple configuration. Use this OR 'strings', not both. Leave empty if using strings configuration.",
+                            "description": "Yield factor (for single installation)",
+                            "unit": "ratio",
+                            "validationHint": "Greater than 0, typically 0.8-0.9, leave empty when using strings"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/strings",
+                          "options": {
+                            "help": "Advanced: Configure multiple strings for panels with different orientations or tilts. Use this OR flat config (tilt/orientation/capacity/yield), not both.",
+                            "description": "Multiple panel strings with different configurations"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -558,11 +587,20 @@
       "label": "Devices",
       "elements": [
         {
+          "type": "HelpButton",
+          "options": {
+            "helpText": "# Electric Vehicle Configuration\n\nOptimize EV charging based on electricity prices, solar production, and charging deadlines.\n\n## Charging Modes\n\n### Instant Charging\nUse `entity_instant_start` + `entity_instant_level` for immediate charging:\n- Trigger instant_start to charge now\n- System charges to instant_level immediately\n- Simpler but less cost-optimized\n\n### Scheduled Charging\nUse `charge_scheduler` for time-based optimization:\n- Set target level and ready datetime\n- System optimizes when to charge for lowest cost\n- Ensures vehicle is ready by deadline\n- More complex but better cost optimization\n\n## Requirements\n- Must configure EITHER instant charging OR scheduler (not both)\n- Vehicle must be home (device tracker)\n- Vehicle must be plugged in (binary sensor)\n- Charger must support amperage control\n\n## Tips\n- Use multiple charge stages for better efficiency modeling\n- Three-phase charging (11/22kW) much faster than single-phase (3.7/7.4kW)\n- Consider time-of-use tariffs when setting charge deadlines\n",
+            "helpTitle": "Help"
+          }
+        },
+        {
           "type": "Control",
           "scope": "#/properties/electric vehicle",
           "options": {
             "description": "Electric vehicle configurations",
-            "help": "# Electric Vehicle Configuration\n\nOptimize EV charging based on electricity prices, solar production, and charging deadlines.\n\n## Charging Modes\n\n### Instant Charging\nUse `entity_instant_start` + `entity_instant_level` for immediate charging:\n- Trigger instant_start to charge now\n- System charges to instant_level immediately\n- Simpler but less cost-optimized\n\n### Scheduled Charging\nUse `charge_scheduler` for time-based optimization:\n- Set target level and ready datetime\n- System optimizes when to charge for lowest cost\n- Ensures vehicle is ready by deadline\n- More complex but better cost optimization\n\n## Requirements\n- Must configure EITHER instant charging OR scheduler (not both)\n- Vehicle must be home (device tracker)\n- Vehicle must be plugged in (binary sensor)\n- Charger must support amperage control\n\n## Tips\n- Use multiple charge stages for better efficiency modeling\n- Three-phase charging (11/22kW) much faster than single-phase (3.7/7.4kW)\n- Consider time-of-use tariffs when setting charge deadlines\n",
+            "title": "EVConfig",
+            "docsUrl": "https://github.com/corneel27/day-ahead/wiki/EV-Configuration",
+            "icon": "car-electric",
             "detail": {
               "type": "VerticalLayout",
               "elements": [
@@ -698,11 +736,20 @@
           }
         },
         {
+          "type": "HelpButton",
+          "options": {
+            "helpText": "# Appliance / Machine Configuration\n\nOptimize operation of flexible load appliances (washing machines, dishwashers, dryers, etc.) based on electricity prices and constraints.\n\n## How It Works\n\nThe system optimizes when to start appliances within time windows:\n1. User sets start window (earliest start) and end window (must finish by)\n2. User selects program (each program has a power profile)\n3. System calculates optimal start time to minimize cost\n4. System writes calculated start time to HA entity\n5. User/automation triggers machine at optimal time\n\n## Programs\n\nEach program defines power consumption over time:\n- **Power profile**: List of watts per time interval\n- **Duration**: Length of power list (e.g., 5 values = 5 hours)\n- **'off' program**: Required, with zero power consumption\n\nExamples:\n- Eco wash: `[1800, 1800, 400, 400, 100]` (5 hours)\n- Quick wash: `[2200, 500, 100]` (3 hours)\n- Off: `[]` or `[0]`\n\n## Time Windows\n\n- **Start window**: Earliest allowed start (e.g., \"now\" or \"20:00\")\n- **End window**: Latest allowed finish (e.g., \"08:00 next day\")\n- System finds cheapest start time within window\n- Machine must complete before end window\n\n## Tips\n\n- Define accurate power profiles for each program\n- Set realistic time windows (at least program duration)\n- Wider time windows = better optimization opportunities\n- Combine with solar production forecasts\n- Use instant start for urgent loads\n- Multiple machines can be optimized together\n",
+            "helpTitle": "Help"
+          }
+        },
+        {
           "type": "Control",
           "scope": "#/properties/machines",
           "options": {
             "description": "Appliance/machine configurations",
-            "help": "# Appliance / Machine Configuration\n\nOptimize operation of flexible load appliances (washing machines, dishwashers, dryers, etc.) based on electricity prices and constraints.\n\n## How It Works\n\nThe system optimizes when to start appliances within time windows:\n1. User sets start window (earliest start) and end window (must finish by)\n2. User selects program (each program has a power profile)\n3. System calculates optimal start time to minimize cost\n4. System writes calculated start time to HA entity\n5. User/automation triggers machine at optimal time\n\n## Programs\n\nEach program defines power consumption over time:\n- **Power profile**: List of watts per time interval\n- **Duration**: Length of power list (e.g., 5 values = 5 hours)\n- **'off' program**: Required, with zero power consumption\n\nExamples:\n- Eco wash: `[1800, 1800, 400, 400, 100]` (5 hours)\n- Quick wash: `[2200, 500, 100]` (3 hours)\n- Off: `[]` or `[0]`\n\n## Time Windows\n\n- **Start window**: Earliest allowed start (e.g., \"now\" or \"20:00\")\n- **End window**: Latest allowed finish (e.g., \"08:00 next day\")\n- System finds cheapest start time within window\n- Machine must complete before end window\n\n## Tips\n\n- Define accurate power profiles for each program\n- Set realistic time windows (at least program duration)\n- Wider time windows = better optimization opportunities\n- Combine with solar production forecasts\n- Use instant start for urgent loads\n- Multiple machines can be optimized together\n",
+            "title": "MachineConfig",
+            "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Machine-Configuration",
+            "icon": "washing-machine",
             "detail": {
               "type": "VerticalLayout",
               "elements": [
