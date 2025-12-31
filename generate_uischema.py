@@ -131,45 +131,68 @@ def extract_x_ui_group_from_property(prop_schema: Dict[str, Any], defs: Dict[str
     """
     Extract x-ui-group and x-order from a property schema.
     
-    For object types, check the schema directly.
-    For array types, check the items $ref definition.
-    For $ref types, resolve and check the definition.
-    For anyOf types (complex unions), check the first non-null option.
+    Cascade priority for x-ui-group (highest to lowest):
+    1. Field-level x-ui-group (in property schema)
+    2. Model-level x-ui-group (in model's json_schema_extra)
+    3. Parent model-level x-ui-group (recursive up the hierarchy)
+    4. Default to "General"
+    
+    For x-order: field-level first, then model-level, default to 999
     """
-    # Check if property has x-ui-group or x-order directly
-    group = prop_schema.get("x-ui-group", None)
-    order = prop_schema.get("x-order", 999)
+    group = None
+    order = None
     
+    # 1. Check field-level x-ui-group and x-order (highest priority)
+    if "x-ui-group" in prop_schema:
+        group = prop_schema["x-ui-group"]
+    if "x-order" in prop_schema:
+        order = prop_schema["x-order"]
+    
+    # If group found at field level, return early
     if group is not None:
-        return group, order
+        return group, order if order is not None else 999
     
-    # Check if it's a $ref - resolve it (handles flattened Optional types)
+    # 2. Check model-level and parent hierarchy for x-ui-group and x-order
+    resolved_model = None
+    
+    # Check in $ref
     if "$ref" in prop_schema:
-        resolved = resolve_ref(prop_schema["$ref"], defs)
-        if "x-ui-group" in resolved:
-            return resolved.get("x-ui-group", "General"), resolved.get("x-order", 999)
+        resolved_model = resolve_ref(prop_schema["$ref"], defs)
     
-    # Check if it's an anyOf (complex unions that weren't flattened)
-    if "anyOf" in prop_schema:
+    # Check in anyOf options (for Optional types)
+    elif "anyOf" in prop_schema:
         for option in prop_schema["anyOf"]:
             # Skip null types
             if isinstance(option, dict) and option.get("type") == "null":
                 continue
             # Check if this option has a $ref
             if isinstance(option, dict) and "$ref" in option:
-                resolved = resolve_ref(option["$ref"], defs)
-                if "x-ui-group" in resolved:
-                    return resolved.get("x-ui-group", "General"), resolved.get("x-order", 999)
+                resolved_model = resolve_ref(option["$ref"], defs)
+                break
     
-    # Check if it's an array - look at items
-    if prop_schema.get("type") == "array" and "items" in prop_schema:
+    # Check in array items
+    elif prop_schema.get("type") == "array" and "items" in prop_schema:
         items = prop_schema["items"]
         if "$ref" in items:
-            resolved = resolve_ref(items["$ref"], defs)
-            if "x-ui-group" in resolved:
-                return resolved.get("x-ui-group", "General"), resolved.get("x-order", 999)
+            resolved_model = resolve_ref(items["$ref"], defs)
     
-    return "General", order
+    # Extract group and order from model hierarchy
+    if resolved_model is not None:
+        # Check model-level x-ui-group
+        if group is None and "x-ui-group" in resolved_model:
+            group = resolved_model["x-ui-group"]
+        
+        # Check model-level x-order
+        if order is None and "x-order" in resolved_model:
+            order = resolved_model["x-order"]
+    
+    # Fallback defaults
+    if group is None:
+        group = "General"
+    if order is None:
+        order = 999
+    
+    return group, order
 
 
 def validate_entity_picker_filters(schema: Dict[str, Any], defs: Dict[str, Any]) -> None:
@@ -404,49 +427,74 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
     return control
 
 
-def extract_section_info(prop_schema: Dict[str, Any], defs: Dict[str, Any]) -> Tuple[str, Any]:
+def extract_section_info(prop_schema: Dict[str, Any], defs: Dict[str, Any], use_general_default: bool = False) -> Tuple[str, Any]:
     """
     Extract x-ui-section and x-ui-collapse from a property schema.
+    
+    Cascade priority (highest to lowest):
+    1. Field-level x-ui-section (in property schema)
+    2. Model-level x-ui-section (in model's json_schema_extra)
+    3. Parent model-level x-ui-section (recursive up the hierarchy)
+    4. Model class name (title field) OR "General" if use_general_default=True
+    
+    Args:
+        prop_schema: Property schema to extract from
+        defs: Schema definitions
+        use_general_default: If True, default to "General" instead of model class name (for detail views)
     
     Returns (section_name, collapse_state) where collapse_state is:
     - None: not collapsible
     - True: collapsible and collapsed by default
     - False: collapsible and expanded by default
     """
-    section = "General"
+    section = None
     collapse = None
     
-    # Check direct properties
+    # 1. Check field-level x-ui-section (highest priority)
     if "x-ui-section" in prop_schema:
         section = prop_schema["x-ui-section"]
     if "x-ui-collapse" in prop_schema:
         collapse = prop_schema["x-ui-collapse"]
     
-    # Check in resolved $ref
-    # BUT: Don't extract section from nested objects (with properties) since they handle their own internal grouping
-    if "$ref" in prop_schema:
-        resolved = resolve_ref(prop_schema["$ref"], defs)
-        # Only extract section if this is NOT a nested object
-        if "properties" not in resolved:
-            if "x-ui-section" in resolved and section == "General":
-                section = resolved["x-ui-section"]
-            if "x-ui-collapse" in resolved and collapse is None:
-                collapse = resolved["x-ui-collapse"]
+    # If section found at field level, return early
+    if section is not None:
+        return section, collapse
     
-    # Check in anyOf options
-    # BUT: Don't extract section from nested objects (with properties) since they handle their own internal grouping
-    if "anyOf" in prop_schema:
+    # 2. Check model-level and parent hierarchy for x-ui-section
+    resolved_model = None
+    
+    # Check in $ref
+    if "$ref" in prop_schema:
+        resolved_model = resolve_ref(prop_schema["$ref"], defs)
+    
+    # Check in anyOf options (for Optional types)
+    elif "anyOf" in prop_schema:
         for option in prop_schema["anyOf"]:
             if isinstance(option, dict) and option.get("type") != "null":
                 if "$ref" in option:
-                    resolved = resolve_ref(option["$ref"], defs)
-                    # Only extract section if this is NOT a nested object
-                    if "properties" not in resolved:
-                        if "x-ui-section" in resolved and section == "General":
-                            section = resolved["x-ui-section"]
-                        if "x-ui-collapse" in resolved and collapse is None:
-                            collapse = resolved["x-ui-collapse"]
+                    resolved_model = resolve_ref(option["$ref"], defs)
                     break
+    
+    # Extract section from model hierarchy
+    if resolved_model is not None:
+        # Check model-level x-ui-section
+        if "x-ui-section" in resolved_model:
+            section = resolved_model["x-ui-section"]
+        
+        # Check model-level x-ui-collapse
+        if collapse is None and "x-ui-collapse" in resolved_model:
+            collapse = resolved_model["x-ui-collapse"]
+        
+        # If not found, use model class name (title) as default, or "General" if requested
+        if section is None:
+            if use_general_default:
+                section = "General"
+            else:
+                section = resolved_model.get("title", "General")
+    
+    # Fallback to "General" if nothing found
+    if section is None:
+        section = "General"
     
     return section, collapse
 
@@ -544,8 +592,8 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any], sou
     controls_with_meta = []
     
     for prop_name, prop_schema in item_def["properties"].items():
-        # Extract section information
-        section_name, collapse_state = extract_section_info(prop_schema, defs)
+        # Extract section information (use "General" as default instead of model class name)
+        section_name, collapse_state = extract_section_info(prop_schema, defs, use_general_default=True)
         
         # Extract order (default to 999 if not specified)
         order = prop_schema.get("x-order", 999)
@@ -722,7 +770,9 @@ def main():
         print("✅ All entity picker widgets have filters")
     
     # Group properties by x-ui-group
-    # Structure: {group_name: [(order, prop_name, prop_schema)]}
+    # Structure: {group_name: [(order, prop_name, prop_schema, source_class, parent_prop_name, parent_section)]}
+    # parent_prop_name is None for root properties, or the root property name for nested fields
+    # parent_section is None for root properties, or the parent model's x-ui-section for nested fields
     groups = defaultdict(list)
     
     for prop_name, prop_schema in properties.items():
@@ -732,15 +782,46 @@ def main():
         
         # Extract source class name from $ref if present
         source_class = None
+        resolved_model = None
         if "$ref" in prop_schema:
             ref_name = prop_schema["$ref"].split("/")[-1]
             ref_def = defs.get(ref_name, {})
             source_class = ref_def.get("title", ref_name)
+            resolved_model = ref_def
+        elif "anyOf" in prop_schema:
+            for option in prop_schema["anyOf"]:
+                if isinstance(option, dict) and option.get("type") != "null" and "$ref" in option:
+                    ref_name = option["$ref"].split("/")[-1]
+                    ref_def = defs.get(ref_name, {})
+                    source_class = ref_def.get("title", ref_name)
+                    resolved_model = ref_def
+                    break
         
-        group, order = extract_x_ui_group_from_property(prop_schema, defs)
-        groups[group].append((order, prop_name, prop_schema, source_class))
-        if not QUIET:
-            print(f"  {prop_name} -> {group} (order: {order})")
+        # Check if this is a nested object that should be expanded
+        if resolved_model and "properties" in resolved_model:
+            # This is a nested object - expand its fields and add them to groups
+            nested_class = resolved_model.get("title", prop_name)
+            parent_group = resolved_model.get("x-ui-group", None)
+            parent_section = resolved_model.get("x-ui-section", None)
+            
+            for nested_prop_name, nested_prop_schema in resolved_model["properties"].items():
+                # Extract group for the nested field
+                nested_group, nested_order = extract_x_ui_group_from_property(nested_prop_schema, defs)
+                
+                # If still "General", use parent model's x-ui-group if available
+                if nested_group == "General" and parent_group:
+                    nested_group = parent_group
+                
+                # Add to groups with parent property name and section for scope construction and section cascade
+                groups[nested_group].append((nested_order, nested_prop_name, nested_prop_schema, nested_class, prop_name, parent_section))
+                if not QUIET:
+                    print(f"  {prop_name}.{nested_prop_name} -> {nested_group} (order: {nested_order})")
+        else:
+            # Regular property - add to groups
+            group, order = extract_x_ui_group_from_property(prop_schema, defs)
+            groups[group].append((order, prop_name, prop_schema, source_class, None, None))
+            if not QUIET:
+                print(f"  {prop_name} -> {group} (order: {order})")
     
     # Generate UISchema with Categorization (tabs)
     # Define fixed order for predefined tabs
@@ -757,15 +838,51 @@ def main():
             
             # Collect controls with their section information
             controls_with_meta = []
-            for order, prop_name, prop_schema, source_class in props_list:
-                section_name, collapse_state = extract_section_info(prop_schema, defs)
-                element = generate_uischema_for_property(prop_name, prop_schema, defs, source_class)
-                # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
-                if isinstance(element, list):
-                    for elem in element:
-                        controls_with_meta.append((elem, section_name, collapse_state, order))
+            for order, prop_name, prop_schema, source_class, parent_prop_name, parent_section in props_list:
+                # If parent_prop_name is set, this is a nested field - generate control directly
+                if parent_prop_name:
+                    # Generate control for nested field
+                    scope = f"#/properties/{parent_prop_name}/properties/{prop_name}"
+                    control = {"type": "Control", "scope": scope, "options": {}}
+                    
+                    # Extract metadata
+                    if "x-help" in prop_schema:
+                        control["options"]["help"] = prop_schema["x-help"]
+                    if "description" in prop_schema:
+                        control["options"]["description"] = prop_schema["description"]
+                    if "x-unit" in prop_schema:
+                        control["options"]["unit"] = prop_schema["x-unit"]
+                    if "x-ui-widget" in prop_schema:
+                        control["options"]["widget"] = prop_schema["x-ui-widget"]
+                    if "x-ui-widget-filter" in prop_schema:
+                        control["options"]["widgetFilter"] = prop_schema["x-ui-widget-filter"]
+                    if "x-validation-hint" in prop_schema:
+                        control["options"]["validationHint"] = prop_schema["x-validation-hint"]
+                    
+                    # Add source tracking
+                    control["options"]["x-source"] = f"{source_class}.{prop_name}"
+                    
+                    # Add rule if present
+                    if "x-ui-rules" in prop_schema:
+                        control["rule"] = prop_schema["x-ui-rules"]
+                    
+                    # Extract section for nested field
+                    section_name, collapse_state = extract_section_info(prop_schema, defs, use_general_default=False)
+                    # If still "General", use parent model's x-ui-section if available
+                    if section_name == "General" and parent_section:
+                        section_name = parent_section
+                    
+                    controls_with_meta.append((control, section_name, collapse_state, order))
                 else:
-                    controls_with_meta.append((element, section_name, collapse_state, order))
+                    # Regular field - generate control normally
+                    section_name, collapse_state = extract_section_info(prop_schema, defs)
+                    element = generate_uischema_for_property(prop_name, prop_schema, defs, source_class)
+                    # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
+                    if isinstance(element, list):
+                        for elem in element:
+                            controls_with_meta.append((elem, section_name, collapse_state, order))
+                    else:
+                        controls_with_meta.append((element, section_name, collapse_state, order))
             
             # Group controls by section and create Group layouts
             group_elements = group_controls_by_section(controls_with_meta)
@@ -785,15 +902,51 @@ def main():
         
         # Collect controls with their section information
         controls_with_meta = []
-        for order, prop_name, prop_schema, source_class in props_list:
-            section_name, collapse_state = extract_section_info(prop_schema, defs)
-            element = generate_uischema_for_property(prop_name, prop_schema, defs, source_class)
-            # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
-            if isinstance(element, list):
-                for elem in element:
-                    controls_with_meta.append((elem, section_name, collapse_state, order))
+        for order, prop_name, prop_schema, source_class, parent_prop_name, parent_section in props_list:
+            # If parent_prop_name is set, this is a nested field - generate control directly
+            if parent_prop_name:
+                # Generate control for nested field
+                scope = f"#/properties/{parent_prop_name}/properties/{prop_name}"
+                control = {"type": "Control", "scope": scope, "options": {}}
+                
+                # Extract metadata
+                if "x-help" in prop_schema:
+                    control["options"]["help"] = prop_schema["x-help"]
+                if "description" in prop_schema:
+                    control["options"]["description"] = prop_schema["description"]
+                if "x-unit" in prop_schema:
+                    control["options"]["unit"] = prop_schema["x-unit"]
+                if "x-ui-widget" in prop_schema:
+                    control["options"]["widget"] = prop_schema["x-ui-widget"]
+                if "x-ui-widget-filter" in prop_schema:
+                    control["options"]["widgetFilter"] = prop_schema["x-ui-widget-filter"]
+                if "x-validation-hint" in prop_schema:
+                    control["options"]["validationHint"] = prop_schema["x-validation-hint"]
+                
+                # Add source tracking
+                control["options"]["x-source"] = f"{source_class}.{prop_name}"
+                
+                # Add rule if present
+                if "x-ui-rules" in prop_schema:
+                    control["rule"] = prop_schema["x-ui-rules"]
+                
+                # Extract section for nested field
+                section_name, collapse_state = extract_section_info(prop_schema, defs, use_general_default=False)
+                # If still "General", use parent model's x-ui-section if available
+                if section_name == "General" and parent_section:
+                    section_name = parent_section
+                
+                controls_with_meta.append((control, section_name, collapse_state, order))
             else:
-                controls_with_meta.append((element, section_name, collapse_state, order))
+                # Regular field - generate control normally
+                section_name, collapse_state = extract_section_info(prop_schema, defs)
+                element = generate_uischema_for_property(prop_name, prop_schema, defs, source_class)
+                # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
+                if isinstance(element, list):
+                    for elem in element:
+                        controls_with_meta.append((elem, section_name, collapse_state, order))
+                else:
+                    controls_with_meta.append((element, section_name, collapse_state, order))
         
         # Group controls by section and create Group layouts
         group_elements = group_controls_by_section(controls_with_meta)

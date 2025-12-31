@@ -550,7 +550,6 @@
           "title": "Port",
           "type": "integer",
           "x-help": "Port number for Day Ahead Optimizer web dashboard. Access at http://homeassistant.local:PORT. Must be between 1024-65535 (non-privileged ports).",
-          "x-ui-section": "Dashboard",
           "x-unit": "port",
           "x-validation-hint": "1024-65535, default 5000"
         }
@@ -560,8 +559,8 @@
       "x-docs-url": "https://github.com/corneel27/day-ahead/wiki/Dashboard",
       "x-help": "# Dashboard Configuration\n\nConfigure web dashboard for monitoring and controlling Day Ahead Optimizer.\n\n## Dashboard Features\n\n- View optimization results\n- Monitor device schedules\n- Check price forecasts\n- Review historical data\n- Trigger manual optimization\n- View graphs and reports\n\n## Access\n\nAccess dashboard at:\n- **Local**: http://homeassistant.local:PORT\n- **IP**: http://YOUR_HA_IP:PORT\n\n## Port Selection\n\n- Default: 5000\n- Must be unused port\n- Check no conflicts with other services\n- Must be >= 1024 (non-privileged)\n\n## Tips\n\n- Add to Home Assistant sidebar via iframe card\n- Enable Ingress for secure access\n- Use reverse proxy for external access\n- Dashboard updates after each optimization\n",
       "x-icon": "view-dashboard",
-      "x-order": 16,
-      "x-ui-group": "Integration"
+      "x-ui-group": "Integration",
+      "x-ui-section": "Dashboard"
     },
     "DatabaseConfig": {
       "additionalProperties": true,
@@ -2042,17 +2041,69 @@
       "x-order": 17,
       "x-ui-group": "Reporting"
     },
+    "ScheduleEntry": {
+      "description": "A single scheduled task entry.",
+      "properties": {
+        "time": {
+          "description": "Time pattern in HHMM format",
+          "title": "Time",
+          "type": "string",
+          "x-help": "Time pattern: specific time like '0435' or wildcard like 'xx00' (every hour at :00)",
+          "x-validation-hint": "Format: HHMM (24-hour, e.g., '0435', 'xx15')"
+        },
+        "action": {
+          "description": "Action to execute at this time",
+          "enum": [
+            "get_meteo_data",
+            "get_tibber_data",
+            "get_day_ahead_prices",
+            "calc_optimum",
+            "clean_data",
+            "calc_baseloads"
+          ],
+          "title": "Action",
+          "type": "string",
+          "x-help": "Task to run: data collection, optimization, or maintenance"
+        }
+      },
+      "required": [
+        "time",
+        "action"
+      ],
+      "title": "ScheduleEntry",
+      "type": "object"
+    },
     "SchedulerConfig": {
-      "additionalProperties": true,
-      "description": "Task scheduler configuration.\n\nMaps time patterns to action names.\nTime patterns can be:\n- Specific times: \"0435\", \"1255\"\n- Wildcards: \"xx00\" (every hour at :00), \"xx15\" (every hour at :15)\n\nActions include:\n- get_meteo_data\n- get_tibber_data\n- get_day_ahead_prices\n- calc_optimum\n- clean_data\n- calc_baseloads",
-      "properties": {},
+      "description": "Task scheduler configuration.\n\nConfigure automatic task execution based on time patterns.\n\nTime patterns can be:\n- Specific times: \"0435\", \"1255\" (HHMM format, 24-hour)\n- Wildcards: \"xx00\" (every hour at :00), \"xx15\" (every hour at :15)\n\nActions include:\n- get_meteo_data: Fetch weather forecasts\n- get_tibber_data: Fetch Tibber prices\n- get_day_ahead_prices: Fetch day-ahead market prices\n- calc_optimum: Run optimization algorithm\n- clean_data: Clean up old data\n- calc_baseloads: Calculate baseline consumption",
+      "properties": {
+        "active": {
+          "default": false,
+          "description": "Enable or disable the scheduler",
+          "title": "Active",
+          "type": "boolean",
+          "x-help": "When enabled, scheduled tasks will run automatically at configured times. Disable to prevent all scheduled tasks from running.",
+          "x-order": 1,
+          "x-ui-section": "Scheduler"
+        },
+        "schedule": {
+          "description": "Scheduled task entries",
+          "items": {
+            "$ref": "#/$defs/ScheduleEntry"
+          },
+          "title": "Schedule",
+          "type": "array",
+          "x-help": "Define when tasks should run. Add entries with time patterns (e.g., '0435', 'xx00') and actions.",
+          "x-order": 2,
+          "x-ui-section": "Scheduler"
+        }
+      },
       "title": "SchedulerConfig",
       "type": "object",
       "x-docs-url": "https://github.com/corneel27/day-ahead/wiki/Scheduler",
-      "x-help": "# Scheduler Configuration\n\nDefine when automatic tasks run using time patterns.\n\n## Time Pattern Format\n\n- **Specific time**: \"0435\" (4:35 AM), \"1255\" (12:55 PM)\n- **Hourly wildcard**: \"xx00\" (every hour at :00), \"xx15\" (every hour at :15)\n- **Format**: HHMM (24-hour, no colons)\n\n## Available Actions\n\n### Data Collection\n- **get_meteo_data**: Fetch weather forecasts (solar irradiation, temperature)\n- **get_tibber_data**: Fetch Tibber prices (if using Tibber)\n- **get_day_ahead_prices**: Fetch day-ahead market prices\n\n### Optimization\n- **calc_optimum**: Run main optimization algorithm\n- **calc_baseloads**: Calculate baseline consumption from history\n\n### Maintenance\n- **clean_data**: Clean up old data (runs save_days retention)\n\n## Example Configuration\n\n```json\n{\n  \"0435\": \"get_day_ahead_prices\",\n  \"0445\": \"get_meteo_data\",\n  \"0500\": \"calc_optimum\",\n  \"xx00\": \"calc_baseloads\",\n  \"0300\": \"clean_data\"\n}\n```\n\n## Typical Schedule\n\n1. **04:00-05:00**: Fetch prices and weather (after day-ahead auction)\n2. **05:00**: Run optimization with fresh data\n3. **Hourly**: Update baseload calculations\n4. **03:00**: Clean old data (low activity time)\n\n## Tips\n\n- Day-ahead prices available after ~13:00 (CET) for next day\n- Run optimization after all data fetched\n- Hourly baseload updates improve accuracy\n- Clean data during low activity (night)\n- Avoid overlapping long-running tasks\n",
+      "x-help": "# Scheduler Configuration\n\nDefine when automatic tasks run using time patterns.\n\n## Time Pattern Format\n\n- **Specific time**: \"0435\" (4:35 AM), \"1255\" (12:55 PM)\n- **Hourly wildcard**: \"xx00\" (every hour at :00), \"xx15\" (every hour at :15)\n- **Format**: HHMM (24-hour, no colons)\n\n## Available Actions\n\n### Data Collection\n- **get_meteo_data**: Fetch weather forecasts (solar irradiation, temperature)\n- **get_tibber_data**: Fetch Tibber prices (if using Tibber)\n- **get_day_ahead_prices**: Fetch day-ahead market prices\n\n### Optimization\n- **calc_optimum**: Run main optimization algorithm\n- **calc_baseloads**: Calculate baseline consumption from history\n\n### Maintenance\n- **clean_data**: Clean up old data (runs save_days retention)\n\n## Example Configuration\n\n```json\n{\n  \"active\": true,\n  \"schedule\": [\n    {\"time\": \"0435\", \"action\": \"get_day_ahead_prices\"},\n    {\"time\": \"0445\", \"action\": \"get_meteo_data\"},\n    {\"time\": \"0500\", \"action\": \"calc_optimum\"},\n    {\"time\": \"xx00\", \"action\": \"calc_baseloads\"},\n    {\"time\": \"0300\", \"action\": \"clean_data\"}\n  ]\n}\n```\n\n## Typical Schedule\n\n1. **04:00-05:00**: Fetch prices and weather (after day-ahead auction)\n2. **05:00**: Run optimization with fresh data\n3. **Hourly**: Update baseload calculations\n4. **03:00**: Clean old data (low activity time)\n\n## Tips\n\n- Day-ahead prices available after ~13:00 (CET) for next day\n- Run optimization after all data fetched\n- Hourly baseload updates improve accuracy\n- Clean data during low activity (night)\n- Avoid overlapping long-running tasks\n",
       "x-icon": "clock-outline",
       "x-order": 18,
-      "x-ui-group": "Infrastructure"
+      "x-ui-group": "DAO"
     },
     "SecretStr": {
       "additionalProperties": false,
@@ -2368,13 +2419,15 @@
       ],
       "title": "Logging Level",
       "type": "string",
-      "x-ui-group": "DAO"
+      "x-ui-group": "DAO",
+      "x-ui-section": "Main"
     },
     "protocol api": {
       "default": null,
       "description": "API protocol",
       "title": "Protocol Api",
-      "x-ui-group": "DAO",
+      "x-ui-group": "Integration",
+      "x-ui-section": "Dashboard",
       "enum": [
         "http",
         "https"
