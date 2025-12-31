@@ -80,21 +80,6 @@
               }
             }
           ]
-        },
-        {
-          "type": "Group",
-          "label": "General",
-          "elements": [
-            {
-              "type": "Control",
-              "scope": "#/properties/meteoserver-key/properties/secret_key",
-              "options": {
-                "help": "Secret key name to resolve from secrets.json. Use '!secret key_name' in config. Never store actual secrets in options.json!",
-                "validationHint": "Use format: !secret key_name",
-                "x-source": "SecretStr.secret_key"
-              }
-            }
-          ]
         }
       ]
     },
@@ -937,6 +922,16 @@
           "elements": [
             {
               "type": "Control",
+              "scope": "#/properties/meteoserver-key",
+              "options": {
+                "help": "Meteoserver API access key. Get from Meteoserver.nl account. Use !secret for security. Required for weather forecasts.",
+                "description": "Meteoserver API key (can use !secret)",
+                "widget": "secret-picker",
+                "x-source": "SecretStr.meteoserver-key"
+              }
+            },
+            {
+              "type": "Control",
               "scope": "#/properties/meteoserver-model",
               "options": {
                 "description": "Meteoserver model"
@@ -1677,6 +1672,7 @@
               "options": {
                 "help": "Tibber API access token. Get from Tibber app or developer portal. Use !secret for security. Required if using Tibber as price source.",
                 "description": "Tibber API token (can use !secret)",
+                "widget": "secret-picker",
                 "validationHint": "Use !secret for API tokens",
                 "x-source": "TibberConfig.api_token"
               }

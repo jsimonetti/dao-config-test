@@ -783,22 +783,28 @@ def main():
         # Extract source class name from $ref if present
         source_class = None
         resolved_model = None
+        is_union_type = False
+        
         if "$ref" in prop_schema:
             ref_name = prop_schema["$ref"].split("/")[-1]
             ref_def = defs.get(ref_name, {})
             source_class = ref_def.get("title", ref_name)
             resolved_model = ref_def
         elif "anyOf" in prop_schema:
+            # Union types (like str | SecretStr) should NOT be expanded
+            # They should be rendered as a single control
+            is_union_type = True
             for option in prop_schema["anyOf"]:
                 if isinstance(option, dict) and option.get("type") != "null" and "$ref" in option:
                     ref_name = option["$ref"].split("/")[-1]
                     ref_def = defs.get(ref_name, {})
                     source_class = ref_def.get("title", ref_name)
-                    resolved_model = ref_def
+                    # Don't set resolved_model for union types - prevents expansion
                     break
         
         # Check if this is a nested object that should be expanded
-        if resolved_model and "properties" in resolved_model:
+        # Skip union types (anyOf) - they should be rendered as single controls
+        if resolved_model and "properties" in resolved_model and not is_union_type:
             # This is a nested object - expand its fields and add them to groups
             nested_class = resolved_model.get("title", prop_name)
             parent_group = resolved_model.get("x-ui-group", None)

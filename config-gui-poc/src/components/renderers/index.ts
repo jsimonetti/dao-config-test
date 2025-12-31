@@ -8,6 +8,7 @@ import EntityPickerOrNumberRenderer, { entityPickerOrNumberTester } from './Enti
 import EntityPickerRenderer, { entityPickerTester } from './EntityPickerRenderer'
 import EntityListPickerRenderer, { entityListPickerTester } from './EntityListPickerRenderer'
 import EntityPickerOrBooleanRenderer, { entityPickerOrBooleanTester } from './EntityPickerOrBooleanRenderer'
+import SecretPickerRenderer, { secretPickerTester } from './SecretPickerRenderer'
 import MarkdownLabelRenderer, { markdownLabelTester } from './MarkdownLabelRenderer'
 import HelpButtonRenderer, { helpButtonTester } from './HelpButtonRenderer'
 import { materialRenderers } from '@jsonforms/material-renderers'
@@ -19,6 +20,7 @@ export const customRenderers = [
   { tester: entityPickerTester, renderer: EntityPickerRenderer },
   { tester: entityListPickerTester, renderer: EntityListPickerRenderer },
   { tester: entityPickerOrBooleanTester, renderer: EntityPickerOrBooleanRenderer },
+  { tester: secretPickerTester, renderer: SecretPickerRenderer },
   { tester: optionalStringTester, renderer: OptionalStringRenderer },
   { tester: boolOrStringTester, renderer: BoolOrStringRenderer },
   { tester: dateDictTester, renderer: DateDictRenderer },

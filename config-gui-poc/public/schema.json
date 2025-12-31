@@ -2290,6 +2290,7 @@
           "x-docs-url": "https://developer.tibber.com/",
           "x-help": "Tibber API access token. Get from Tibber app or developer portal. Use !secret for security. Required if using Tibber as price source.",
           "x-ui-section": "Tibber",
+          "x-ui-widget": "secret-picker",
           "x-validation-hint": "Use !secret for API tokens"
         },
         "api url": {
@@ -2379,8 +2380,11 @@
       ],
       "description": "Meteoserver API key (can use !secret)",
       "title": "Meteoserver-Key",
+      "x-help": "Meteoserver API access key. Get from Meteoserver.nl account. Use !secret for security. Required for weather forecasts.",
       "x-ui-group": "DAO",
-      "x-ui-section": "Weather"
+      "x-ui-section": "Weather",
+      "x-ui-widget": "secret-picker",
+      "x-validation-hint": "Use !secret for API keys"
     },
     "meteoserver-model": {
       "default": "harmonie",
