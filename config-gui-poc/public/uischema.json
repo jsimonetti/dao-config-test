@@ -1315,44 +1315,6 @@
       "elements": [
         {
           "type": "Control",
-          "scope": "#/properties/history",
-          "options": {
-            "description": "History retention settings",
-            "x-source": "HistoryConfig.history",
-            "help": "# History & Data Retention\n\nControl how long optimization history is retained in the database.\n\n## What Gets Stored\n\n- Optimization results (costs, schedules)\n- Price data (day-ahead, tariffs)\n- Device schedules (battery, EV, heating)\n- Solar production forecasts\n- Baseload consumption data\n\n## Retention Guidelines\n\n- **7 days**: Minimal retention, recent data only\n- **14 days**: Two weeks for comparison\n- **30 days**: Monthly trends and analysis\n- **90+ days**: Long-term analysis (larger database)\n\n## Database Growth\n\n- More retention = larger database\n- Typical: ~1-5 MB per day (depends on devices)\n- Monitor database size if using SQLite\n- Consider periodic backups\n\n## Tips\n\n- Start with 7-14 days, increase if needed\n- Check database size regularly\n- Old data cleaned up automatically\n- Increase for detailed cost analysis\n",
-            "detail": {
-              "type": "VerticalLayout",
-              "elements": [
-                {
-                  "type": "Group",
-                  "label": "Retention Settings",
-                  "elements": [
-                    {
-                      "type": "HelpButton",
-                      "options": {
-                        "helpText": "# History & Data Retention\n\nControl how long optimization history is retained in the database.\n\n## What Gets Stored\n\n- Optimization results (costs, schedules)\n- Price data (day-ahead, tariffs)\n- Device schedules (battery, EV, heating)\n- Solar production forecasts\n- Baseload consumption data\n\n## Retention Guidelines\n\n- **7 days**: Minimal retention, recent data only\n- **14 days**: Two weeks for comparison\n- **30 days**: Monthly trends and analysis\n- **90+ days**: Long-term analysis (larger database)\n\n## Database Growth\n\n- More retention = larger database\n- Typical: ~1-5 MB per day (depends on devices)\n- Monitor database size if using SQLite\n- Consider periodic backups\n\n## Tips\n\n- Start with 7-14 days, increase if needed\n- Check database size regularly\n- Old data cleaned up automatically\n- Increase for detailed cost analysis\n",
-                        "helpTitle": "Help"
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/save days",
-                      "options": {
-                        "help": "Number of days to retain optimization history in database. Older data is automatically cleaned up. Longer retention enables better trend analysis but increases database size. Minimum 1 day.",
-                        "description": "Number of days to retain historical data",
-                        "unit": "days",
-                        "validationHint": "Must be >= 1, typical 7-30 days",
-                        "x-source": "HistoryConfig.save days"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "type": "Control",
           "scope": "#/properties/scheduler",
           "options": {
             "description": "Task scheduler configuration",
@@ -2047,6 +2009,44 @@
       "type": "Category",
       "label": "Reporting",
       "elements": [
+        {
+          "type": "Control",
+          "scope": "#/properties/history",
+          "options": {
+            "description": "History retention settings",
+            "x-source": "HistoryConfig.history",
+            "help": "# History & Data Retention\n\nControl how long optimization history is retained in the database.\n\n## What Gets Stored\n\n- Optimization results (costs, schedules)\n- Price data (day-ahead, tariffs)\n- Device schedules (battery, EV, heating)\n- Solar production forecasts\n- Baseload consumption data\n\n## Retention Guidelines\n\n- **7 days**: Minimal retention, recent data only\n- **14 days**: Two weeks for comparison\n- **30 days**: Monthly trends and analysis\n- **90+ days**: Long-term analysis (larger database)\n\n## Database Growth\n\n- More retention = larger database\n- Typical: ~1-5 MB per day (depends on devices)\n- Monitor database size if using SQLite\n- Consider periodic backups\n\n## Tips\n\n- Start with 7-14 days, increase if needed\n- Check database size regularly\n- Old data cleaned up automatically\n- Increase for detailed cost analysis\n",
+            "detail": {
+              "type": "VerticalLayout",
+              "elements": [
+                {
+                  "type": "Group",
+                  "label": "History",
+                  "elements": [
+                    {
+                      "type": "HelpButton",
+                      "options": {
+                        "helpText": "# History & Data Retention\n\nControl how long optimization history is retained in the database.\n\n## What Gets Stored\n\n- Optimization results (costs, schedules)\n- Price data (day-ahead, tariffs)\n- Device schedules (battery, EV, heating)\n- Solar production forecasts\n- Baseload consumption data\n\n## Retention Guidelines\n\n- **7 days**: Minimal retention, recent data only\n- **14 days**: Two weeks for comparison\n- **30 days**: Monthly trends and analysis\n- **90+ days**: Long-term analysis (larger database)\n\n## Database Growth\n\n- More retention = larger database\n- Typical: ~1-5 MB per day (depends on devices)\n- Monitor database size if using SQLite\n- Consider periodic backups\n\n## Tips\n\n- Start with 7-14 days, increase if needed\n- Check database size regularly\n- Old data cleaned up automatically\n- Increase for detailed cost analysis\n",
+                        "helpTitle": "Help"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/save days",
+                      "options": {
+                        "help": "Number of days to retain optimization history in database. Older data is automatically cleaned up. Longer retention enables better trend analysis but increases database size. Minimum 1 day.",
+                        "description": "Number of days to retain historical data",
+                        "unit": "days",
+                        "validationHint": "Must be >= 1, typical 7-30 days",
+                        "x-source": "HistoryConfig.save days"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
         {
           "type": "Control",
           "scope": "#/properties/report",

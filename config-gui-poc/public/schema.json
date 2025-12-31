@@ -1450,7 +1450,7 @@
           "title": "Save Days",
           "type": "integer",
           "x-help": "Number of days to retain optimization history in database. Older data is automatically cleaned up. Longer retention enables better trend analysis but increases database size. Minimum 1 day.",
-          "x-ui-section": "Retention Settings",
+          "x-ui-section": "History",
           "x-unit": "days",
           "x-validation-hint": "Must be >= 1, typical 7-30 days"
         }
@@ -1461,7 +1461,7 @@
       "x-help": "# History & Data Retention\n\nControl how long optimization history is retained in the database.\n\n## What Gets Stored\n\n- Optimization results (costs, schedules)\n- Price data (day-ahead, tariffs)\n- Device schedules (battery, EV, heating)\n- Solar production forecasts\n- Baseload consumption data\n\n## Retention Guidelines\n\n- **7 days**: Minimal retention, recent data only\n- **14 days**: Two weeks for comparison\n- **30 days**: Monthly trends and analysis\n- **90+ days**: Long-term analysis (larger database)\n\n## Database Growth\n\n- More retention = larger database\n- Typical: ~1-5 MB per day (depends on devices)\n- Monitor database size if using SQLite\n- Consider periodic backups\n\n## Tips\n\n- Start with 7-14 days, increase if needed\n- Check database size regularly\n- Old data cleaned up automatically\n- Increase for detailed cost analysis\n",
       "x-icon": "database-clock",
       "x-order": 15,
-      "x-ui-group": "Infrastructure"
+      "x-ui-group": "Reporting"
     },
     "HomeAssistantConfig": {
       "additionalProperties": true,
@@ -2428,7 +2428,7 @@
       },
       "x-ui-section": "Baseload",
       "items": {
-        "type": "number"
+        "type": "integer"
       },
       "maxItems": 24,
       "minItems": 24,
