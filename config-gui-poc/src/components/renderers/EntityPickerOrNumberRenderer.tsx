@@ -12,8 +12,10 @@ import {
   Tooltip,
   ToggleButtonGroup,
   ToggleButton,
+  Chip,
 } from '@mui/material'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
+import WarningIcon from '@mui/icons-material/Warning'
 
 interface EntityPickerOrNumberRendererProps extends ControlProps {
   data: number | string | object | undefined
@@ -95,6 +97,13 @@ const EntityPickerOrNumberRenderer: React.FC<EntityPickerOrNumberRendererProps> 
             </IconButton>
           </Tooltip>
         )}
+        <Chip
+          icon={<WarningIcon />}
+          label="TODO: Number/Entity Picker"
+          size="small"
+          color="warning"
+          sx={{ ml: 1 }}
+        />
       </Box>
       {(description || hasError) && (
         <Typography variant="body2" sx={{ mb: 1 }}>

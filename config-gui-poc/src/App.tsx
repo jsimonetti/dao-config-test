@@ -95,7 +95,7 @@ function App() {
 
   const handleChange = (state: { data: any }) => {
     setData(state.data)
-    console.log('Form data changed:', state.data)
+    //console.log('Form data changed:', state.data)
   }
 
   const handleSave = () => {

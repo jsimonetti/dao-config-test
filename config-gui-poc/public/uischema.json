@@ -92,13 +92,6 @@
         },
         {
           "type": "Control",
-          "scope": "#/properties/graphical backend",
-          "options": {
-            "description": "Matplotlib graphical backend"
-          }
-        },
-        {
-          "type": "Control",
           "scope": "#/properties/interval",
           "options": {
             "description": "Optimization interval in minutes"
@@ -132,7 +125,7 @@
               "type": "Control",
               "scope": "#/properties/battery",
               "options": {
-                "description": "Battery configurations",
+                "description": "Battery configuration for optimization.",
                 "title": "BatteryConfig",
                 "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Battery-Configuration",
                 "icon": "battery-charging",
@@ -141,7 +134,7 @@
                   "elements": [
                     {
                       "type": "Group",
-                      "label": "Battery Connected Solar",
+                      "label": "Power Configuration",
                       "elements": [
                         {
                           "type": "HelpButton",
@@ -152,18 +145,15 @@
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/solar",
+                          "scope": "#/properties/entity_calculated_soc",
                           "options": {
-                            "help": "Optional: Configure DC-coupled solar panels directly connected to this battery inverter. DC coupling is more efficient than AC coupling. Leave empty for AC-coupled or grid-only batteries.",
-                            "description": "DC-coupled solar panels attached to this battery"
+                            "help": "Optional: Home Assistant sensor for calculated State of Charge. System can compute SOC from power flows if BMS sensor is unavailable.",
+                            "description": "HA entity for calculated SOC",
+                            "unit": "%",
+                            "widget": "entity-picker",
+                            "widgetFilter": "sensor"
                           }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "Group",
-                      "label": "Power Configuration",
-                      "elements": [
+                        },
                         {
                           "type": "Control",
                           "scope": "#/properties/name",
@@ -424,16 +414,19 @@
                             "widget": "entity-picker",
                             "widgetFilter": "sensor"
                           }
-                        },
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Group",
+                      "label": "Battery Connected Solar",
+                      "elements": [
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_calculated_soc",
+                          "scope": "#/properties/solar",
                           "options": {
-                            "help": "Optional: Home Assistant sensor for calculated State of Charge. System can compute SOC from power flows if BMS sensor is unavailable.",
-                            "description": "HA entity for calculated SOC",
-                            "unit": "%",
-                            "widget": "entity-picker",
-                            "widgetFilter": "sensor"
+                            "help": "Optional: Configure DC-coupled solar panels directly connected to this battery inverter. DC coupling is more efficient than AC coupling. Leave empty for AC-coupled or grid-only batteries.",
+                            "description": "DC-coupled solar panels attached to this battery"
                           }
                         }
                       ]
@@ -1695,7 +1688,7 @@
     },
     {
       "type": "Category",
-      "label": "Pricing & Markets",
+      "label": "Pricing",
       "elements": [
         {
           "type": "Control",
@@ -1707,116 +1700,137 @@
               "type": "VerticalLayout",
               "elements": [
                 {
-                  "type": "Control",
-                  "scope": "#/properties/source_day_ahead",
-                  "options": {
-                    "help": "Data source for day-ahead electricity market prices. 'nordpool' for Nordic/Baltic, 'entsoe' for European markets, 'tibber' if using Tibber integration.",
-                    "description": "Source for day-ahead prices"
-                  }
+                  "type": "Group",
+                  "label": "Cost",
+                  "elements": [
+                    {
+                      "type": "HelpButton",
+                      "options": {
+                        "helpText": "# Pricing & Tariff Configuration\n\nConfigure electricity market prices and tariff components for accurate cost optimization.\n\n## Price Components\n\nTotal electricity cost consists of:\n1. **Market price**: Day-ahead spot price (nordpool/entsoe/tibber)\n2. **Energy taxes**: Government energy taxes\n3. **Supplier costs**: Your supplier's markup/fees\n4. **VAT**: Value-added tax on sum of above\n\nConsumption price = (market + taxes + supplier) \u00d7 (1 + VAT)\n\n## Date-Based Tariffs\n\nAll tariff fields use date-indexed dictionaries:\n```json\n{\n  \"2024-01-01\": 0.05,\n  \"2024-07-01\": 0.06\n}\n```\n\nSystem uses tariff active on optimization date.\n\n## Data Sources\n\n- **nordpool**: Nord Pool (Nordic/Baltic markets)\n- **entsoe**: ENTSO-E Transparency Platform (all European markets)\n- **tibber**: Tibber API (if using Tibber as supplier)\n\n## Tips\n\n- All prices are EXCLUDING VAT (VAT applied separately)\n- Update tariffs when your supplier changes prices\n- Use !secret for API keys\n- Production costs often lower than consumption (or negative for feed-in credit)\n- Keep last_invoice updated for accurate cost tracking\n- Check your electricity bill for exact tariff components\n",
+                        "helpTitle": "Help"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/cost_supplier_consumption",
+                      "options": {
+                        "help": "Supplier markup/fees for consumption (excluding VAT) indexed by effective date. Fixed part of electricity cost. Format: {'2024-01-01': 0.02}.",
+                        "description": "Supplier costs for consumption by date (YYYY-MM-DD -> euro/kWh ex VAT)",
+                        "unit": "\u20ac/kWh",
+                        "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/cost_supplier_production",
+                      "options": {
+                        "help": "Supplier fees for feed-in/production (excluding VAT) indexed by effective date. May be negative (credit). Format: {'2024-01-01': -0.02}.",
+                        "description": "Supplier costs for production by date (YYYY-MM-DD -> euro/kWh ex VAT)",
+                        "unit": "\u20ac/kWh",
+                        "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
+                      }
+                    }
+                  ]
                 },
                 {
-                  "type": "Control",
-                  "scope": "#/properties/entsoe_api_key",
-                  "options": {
-                    "help": "API key for ENTSO-E Transparency Platform. Required if source_day_ahead='entsoe'. Get free key at transparency.entsoe.eu. Use !secret for security.",
-                    "description": "ENTSO-E API key (can use !secret)",
-                    "validationHint": "Required for entsoe source, use !secret"
-                  }
+                  "type": "Group",
+                  "label": "Prices",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/source_day_ahead",
+                      "options": {
+                        "help": "Data source for day-ahead electricity market prices. 'nordpool' for Nordic/Baltic, 'entsoe' for European markets, 'tibber' if using Tibber integration.",
+                        "description": "Source for day-ahead prices"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/entsoe_api_key",
+                      "options": {
+                        "help": "API key for ENTSO-E Transparency Platform. Required if source_day_ahead='entsoe'. Get free key at transparency.entsoe.eu. Use !secret for security.",
+                        "description": "ENTSO-E API key (can use !secret)",
+                        "validationHint": "Required for entsoe source, use !secret"
+                      },
+                      "rule": {
+                        "condition": {
+                          "schema": {
+                            "const": "entsoe"
+                          },
+                          "scope": "#/properties/source_day_ahead"
+                        },
+                        "effect": "SHOW"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/last_invoice",
+                      "options": {
+                        "help": "Date of last electricity invoice. Used for calculating costs since last billing period. Format: YYYY-MM-DD. Update after receiving invoices.",
+                        "description": "Date of last invoice (YYYY-MM-DD)",
+                        "validationHint": "Must be YYYY-MM-DD format"
+                      }
+                    }
+                  ]
                 },
                 {
-                  "type": "Control",
-                  "scope": "#/properties/energy_taxes_consumption",
-                  "options": {
-                    "help": "Energy taxes on consumption (excluding VAT) indexed by effective date. Format: {'2024-01-01': 0.05}. Use date when tariff changes.",
-                    "description": "Energy taxes for consumption by date (YYYY-MM-DD -> euro/kWh ex VAT)",
-                    "unit": "\u20ac/kWh",
-                    "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
-                  }
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/energy_taxes_production",
-                  "options": {
-                    "help": "Energy taxes on feed-in/production (excluding VAT) indexed by effective date. Often zero or negative. Format: {'2024-01-01': 0.0}.",
-                    "description": "Energy taxes for production by date (YYYY-MM-DD -> euro/kWh ex VAT)",
-                    "unit": "\u20ac/kWh",
-                    "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
-                  }
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/cost_supplier_consumption",
-                  "options": {
-                    "help": "Supplier markup/fees for consumption (excluding VAT) indexed by effective date. Fixed part of electricity cost. Format: {'2024-01-01': 0.02}.",
-                    "description": "Supplier costs for consumption by date (YYYY-MM-DD -> euro/kWh ex VAT)",
-                    "unit": "\u20ac/kWh",
-                    "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
-                  }
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/cost_supplier_production",
-                  "options": {
-                    "help": "Supplier fees for feed-in/production (excluding VAT) indexed by effective date. May be negative (credit). Format: {'2024-01-01': -0.02}.",
-                    "description": "Supplier costs for production by date (YYYY-MM-DD -> euro/kWh ex VAT)",
-                    "unit": "\u20ac/kWh",
-                    "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
-                  }
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/vat_consumption",
-                  "options": {
-                    "help": "VAT percentage on consumption indexed by effective date. Format: {'2024-01-01': 21}. Applied to market price + taxes + supplier costs.",
-                    "description": "VAT percentage for consumption by date (YYYY-MM-DD -> %)",
-                    "unit": "%",
-                    "validationHint": "Dict with YYYY-MM-DD keys, integer 0-100 values"
-                  }
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/vat_production",
-                  "options": {
-                    "help": "VAT percentage on feed-in/production indexed by effective date. Format: {'2024-01-01': 21}. Often same as consumption VAT.",
-                    "description": "VAT percentage for production by date (YYYY-MM-DD -> %)",
-                    "unit": "%",
-                    "validationHint": "Dict with YYYY-MM-DD keys, integer 0-100 values"
-                  }
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/last_invoice",
-                  "options": {
-                    "help": "Date of last electricity invoice. Used for calculating costs since last billing period. Format: YYYY-MM-DD. Update after receiving invoices.",
-                    "description": "Date of last invoice (YYYY-MM-DD)",
-                    "validationHint": "Must be YYYY-MM-DD format"
-                  }
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/tax_refund",
-                  "options": {
-                    "help": "Enable tax refund calculation if eligible. Some regions/users get energy tax refunds for solar production. Can be boolean or HA entity ID.",
-                    "description": "Whether tax refund applies",
-                    "widget": "entity-picker-or-boolean"
-                  }
+                  "type": "Group",
+                  "label": "Taxes",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/energy_taxes_consumption",
+                      "options": {
+                        "help": "Energy taxes on consumption (excluding VAT) indexed by effective date. Format: {'2024-01-01': 0.05}. Use date when tariff changes.",
+                        "description": "Energy taxes for consumption by date (YYYY-MM-DD -> euro/kWh ex VAT)",
+                        "unit": "\u20ac/kWh",
+                        "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/energy_taxes_production",
+                      "options": {
+                        "help": "Energy taxes on feed-in/production (excluding VAT) indexed by effective date. Often zero or negative. Format: {'2024-01-01': 0.0}.",
+                        "description": "Energy taxes for production by date (YYYY-MM-DD -> euro/kWh ex VAT)",
+                        "unit": "\u20ac/kWh",
+                        "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/vat_consumption",
+                      "options": {
+                        "help": "VAT percentage on consumption indexed by effective date. Format: {'2024-01-01': 21}. Applied to market price + taxes + supplier costs.",
+                        "description": "VAT percentage for consumption by date (YYYY-MM-DD -> %)",
+                        "unit": "%",
+                        "validationHint": "Dict with YYYY-MM-DD keys, integer 0-100 values"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/vat_production",
+                      "options": {
+                        "help": "VAT percentage on feed-in/production indexed by effective date. Format: {'2024-01-01': 21}. Often same as consumption VAT.",
+                        "description": "VAT percentage for production by date (YYYY-MM-DD -> %)",
+                        "unit": "%",
+                        "validationHint": "Dict with YYYY-MM-DD keys, integer 0-100 values"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/tax_refund",
+                      "options": {
+                        "help": "Enable tax refund calculation if eligible. Some regions/users get energy tax refunds for solar production. Can be boolean or HA entity ID.",
+                        "description": "Whether tax refund applies",
+                        "widget": "entity-picker-or-boolean"
+                      }
+                    }
+                  ]
                 }
               ]
             }
-          },
-          "rule": [
-            {
-              "condition": {
-                "schema": {
-                  "not": {
-                    "const": "entsoe"
-                  }
-                },
-                "scope": "#/properties/source_day_ahead"
-              },
-              "effect": "HIDE"
-            }
-          ]
+          }
         }
       ]
     },
@@ -1994,8 +2008,7 @@
                   "scope": "#/properties/show",
                   "options": {
                     "help": "Enable graph generation and display. Graphs show optimization results, prices, battery schedules. Set to true to enable, false to disable. Can be HA entity ID.",
-                    "description": "Whether to show graphics",
-                    "widget": "entity-picker-or-boolean"
+                    "description": "Whether to show graphics"
                   }
                 },
                 {
@@ -2003,8 +2016,7 @@
                   "scope": "#/properties/battery balance",
                   "options": {
                     "help": "Display battery state of charge and power flows in graphs. Shows charge/discharge schedule over time.",
-                    "description": "Show battery balance in graphs",
-                    "widget": "entity-picker-or-boolean"
+                    "description": "Show battery balance in graphs"
                   }
                 },
                 {
@@ -2012,8 +2024,7 @@
                   "scope": "#/properties/prices consumption",
                   "options": {
                     "help": "Display consumption prices (market + taxes + VAT) in graphs. Helps visualize expensive vs cheap periods.",
-                    "description": "Show consumption prices in graphs",
-                    "widget": "entity-picker-or-boolean"
+                    "description": "Show consumption prices in graphs"
                   }
                 },
                 {
@@ -2021,8 +2032,7 @@
                   "scope": "#/properties/prices production",
                   "options": {
                     "help": "Display feed-in/production prices in graphs. Useful if you have solar feed-in to compare consumption vs production value.",
-                    "description": "Show production prices in graphs",
-                    "widget": "entity-picker-or-boolean"
+                    "description": "Show production prices in graphs"
                   }
                 },
                 {
@@ -2030,8 +2040,7 @@
                   "scope": "#/properties/prices spot",
                   "options": {
                     "help": "Display raw day-ahead spot market prices (before taxes/markup) in graphs. Shows pure market price variations.",
-                    "description": "Show spot prices in graphs",
-                    "widget": "entity-picker-or-boolean"
+                    "description": "Show spot prices in graphs"
                   }
                 },
                 {
@@ -2039,12 +2048,18 @@
                   "scope": "#/properties/average consumption",
                   "options": {
                     "help": "Display average/baseline consumption in graphs. Helps understand optimization impact relative to normal usage.",
-                    "description": "Show average consumption in graphs",
-                    "widget": "entity-picker-or-boolean"
+                    "description": "Show average consumption in graphs"
                   }
                 }
               ]
             }
+          }
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/graphical backend",
+          "options": {
+            "description": "Matplotlib graphical backend"
           }
         }
       ]

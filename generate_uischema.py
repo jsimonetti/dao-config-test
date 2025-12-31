@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Tuple
 from collections import defaultdict
+import subprocess
 
 
 def replace_flexvalue_refs(schema: Dict[str, Any]) -> Dict[str, Any]:
@@ -435,28 +436,34 @@ def group_controls_by_section(controls_with_meta: list, model_help: str = None) 
     Group controls by x-ui-section and create Group layouts.
     
     Args:
-        controls_with_meta: List of (control_dict, section_name, collapse_state) tuples
+        controls_with_meta: List of (control_dict, section_name, collapse_state, order) tuples
         model_help: Optional model-level help text to prepend to first section
     
     Returns:
         List of Group elements or flat Control elements if only one section
     """
-    # Group controls by section
-    sections = defaultdict(lambda: {"controls": [], "collapse": None})
+    # Group controls by section with order
+    sections = defaultdict(lambda: {"controls": [], "collapse": None, "min_order": 999})
     
-    for control, section_name, collapse_state in controls_with_meta:
-        sections[section_name]["controls"].append(control)
+    for control, section_name, collapse_state, order in controls_with_meta:
+        sections[section_name]["controls"].append((control, order))
+        # Track the minimum order value for section ordering
+        if order < sections[section_name]["min_order"]:
+            sections[section_name]["min_order"] = order
         # Use the first non-None collapse state found for this section
         if sections[section_name]["collapse"] is None and collapse_state is not None:
             sections[section_name]["collapse"] = collapse_state
     
     # If only one section and it's "General", return flat controls
     if len(sections) == 1 and "General" in sections:
-        return sections["General"]["controls"]
+        # Sort by order and extract just the controls (not the order values)
+        sorted_controls = sorted(sections["General"]["controls"], key=lambda x: x[1])
+        return [control for control, order in sorted_controls]
     
     # Create Group elements for each section
     elements = []
-    section_names = sorted(sections.keys())
+    # Sort sections by their minimum order value, then alphabetically
+    section_names = sorted(sections.keys(), key=lambda name: (sections[name]["min_order"], name))
     
     for idx, section_name in enumerate(section_names):
         section_data = sections[section_name]
@@ -473,8 +480,9 @@ def group_controls_by_section(controls_with_meta: list, model_help: str = None) 
             }
             section_elements.append(help_button)
         
-        # Add all controls for this section
-        section_elements.extend(section_data["controls"])
+        # Sort controls by order and add to section
+        sorted_controls = sorted(section_data["controls"], key=lambda x: x[1])
+        section_elements.extend([control for control, order in sorted_controls])
         
         group = {
             "type": "Group",
@@ -514,6 +522,9 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any]) -> 
         # Extract section information
         section_name, collapse_state = extract_section_info(prop_schema, defs)
         
+        # Extract order (default to 999 if not specified)
+        order = prop_schema.get("x-order", 999)
+        
         # Extract options from the property
         options = {}
         rule = None
@@ -536,6 +547,10 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any]) -> 
         # For $ref, resolve and extract metadata
         if "$ref" in prop_schema:
             resolved = resolve_ref(prop_schema["$ref"], defs)
+            # Extract order from resolved if not in prop_schema
+            if order == 999 and "x-order" in resolved:
+                order = resolved["x-order"]
+            
             for x_key, option_key in [
                 ("x-help", "help"),
                 ("description", "description"),
@@ -556,6 +571,10 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any]) -> 
                 if isinstance(option_item, dict) and option_item.get("type") != "null":
                     if "$ref" in option_item:
                         resolved = resolve_ref(option_item["$ref"], defs)
+                        # Extract order from resolved if not set
+                        if order == 999 and "x-order" in resolved:
+                            order = resolved["x-order"]
+                        
                         for x_key, option_key in [
                             ("x-help", "help"),
                             ("description", "description"),
@@ -581,7 +600,7 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any]) -> 
         if rule:
             control["rule"] = rule
         
-        controls_with_meta.append((control, section_name, collapse_state))
+        controls_with_meta.append((control, section_name, collapse_state, order))
     
     # Extract model-level help if present
     model_help = item_def.get("x-help")
@@ -591,6 +610,52 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any]) -> 
     elements.extend(grouped_controls)
     
     return elements
+
+
+def validate_uischema(uischema: Dict[str, Any]) -> None:
+    """
+    Validate the generated UISchema using TypeScript type checking.
+    
+    This validates against JSONForms' official TypeScript type definitions,
+    ensuring type safety and automatic sync with JSONForms updates.
+    
+    Prerequisites: Run 'source activate.sh' before running this script
+    Uses: npm run validate-uischema (tsc --noEmit validate-uischema.ts)
+    
+    Args:
+        uischema: The generated UISchema (already written to file)
+        
+    Raises:
+        RuntimeError: If TypeScript validation fails
+    """
+    gui_poc_dir = Path(__file__).parent / "config-gui-poc"
+    
+    try:
+        # Run TypeScript validation
+        result = subprocess.run(
+            ["npm", "run", "validate-uischema"],
+            cwd=gui_poc_dir,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            print("✅ UISchema TypeScript validation passed")
+        else:
+            print("\n❌ UISchema TypeScript Validation Failed:")
+            print(result.stdout)
+            if result.stderr:
+                print(result.stderr)
+            sys.exit(1)
+            
+    except subprocess.TimeoutExpired:
+        print("⚠️  TypeScript validation timed out")
+        sys.exit(1)
+    except FileNotFoundError:
+        print("⚠️  npm not found - did you run 'source activate.sh'?")
+        print("   Run: source activate.sh && python generate_uischema.py")
+        sys.exit(1)
 
 
 def main():
@@ -656,9 +721,9 @@ def main():
                 # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
                 if isinstance(element, list):
                     for elem in element:
-                        controls_with_meta.append((elem, section_name, collapse_state))
+                        controls_with_meta.append((elem, section_name, collapse_state, 999))
                 else:
-                    controls_with_meta.append((element, section_name, collapse_state))
+                    controls_with_meta.append((element, section_name, collapse_state, 999))
             
             # Group controls by section and create Group layouts
             group_elements = group_controls_by_section(controls_with_meta)
@@ -684,9 +749,9 @@ def main():
             # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
             if isinstance(element, list):
                 for elem in element:
-                    controls_with_meta.append((elem, section_name, collapse_state))
+                    controls_with_meta.append((elem, section_name, collapse_state, 999))
             else:
-                controls_with_meta.append((element, section_name, collapse_state))
+                controls_with_meta.append((element, section_name, collapse_state, 999))
         
         # Group controls by section and create Group layouts
         group_elements = group_controls_by_section(controls_with_meta)
@@ -702,12 +767,16 @@ def main():
         "elements": categories
     }
     
-    # Write UISchema
+    # Write UISchema first
     uischema_file = Path(__file__).parent / "config-gui-poc" / "public" / "uischema.json"
     uischema_file.parent.mkdir(parents=True, exist_ok=True)
     
     with open(uischema_file, "w") as f:
         json.dump(combined_uischema, f, indent=2)
+    
+    # Now validate the written file with TypeScript
+    print("\nValidating UISchema...")
+    validate_uischema(combined_uischema)
     
     # Write JSON Schema
     schema_file = Path(__file__).parent / "config-gui-poc" / "public" / "schema.json"

@@ -53,8 +53,15 @@ The `generate_uischema.py` script extracts custom metadata from Pydantic models 
 | `x-ui-widget-filter` | `str` | Home Assistant entity domain filter (**required** for entity pickers) | `"sensor"`, `"switch"`, `"binary_sensor"` |
 | `x-ui-section` | `str` | Group fields into collapsible sections within a tab | `"Connection Settings"`, `"Database Config"` |
 | `x-ui-collapse` | `bool` | Whether section is collapsed by default | `true` (collapsed), `false` (expanded) |
-| `x-ui-rules` | `dict` | Conditional visibility rules (JSONForms rule format) | `{"effect": "SHOW", "condition": {...}}` |
+| `x-ui-rules` | `dict` | Conditional visibility rules (JSONForms rule format). **Must be a dict, not a list**. | `{"effect": "SHOW", "condition": {"scope": "#/properties/field", "schema": {...}}}` |
 | `x-validation-hint` | `str` | Additional validation guidance text | `"Required for mysql/postgresql engines"` |
+| `x-order` | `int` | Sort order within section (also used for section ordering) | `1`, `10`, `100` |
+
+**Note on `x-order`**: This field serves two purposes:
+- **Within a section**: Fields are sorted by their `x-order` value (lower values appear first)
+- **Section ordering**: Sections are ordered by the minimum `x-order` value found in that section, then alphabetically
+  - Example: Section "A" with fields having `x-order: 10, 20` appears before Section "B" with `x-order: 100`
+  - This allows logical ordering without renaming sections
 
 ### Model-Level Extensions
 
@@ -187,7 +194,6 @@ The config GUI uses custom renderers to handle complex field types. Here's what'
 |----------|-------------|-------------|
 | **HelpButtonRenderer** | `HelpButton` (UISchema element) | Renders collapsible inline help panels with markdown support. Triggered by model-level `x-help`. |
 | **MarkdownLabelRenderer** | `Label` (UISchema element) | Renders Label elements with full markdown formatting (headings, lists, code, links). |
-| **EntityPickerOrNumberRenderer** | `entity-picker-or-number` | Toggle between numeric input and entity ID string. Uses `x-ui-widget-filter` for entity domain. Handles FlexValue fields. |
 | **BoolOrStringRenderer** | N/A (anyOf boolean/string) | Toggle between boolean and string input for optional string fields. |
 | **OptionalStringRenderer** | N/A (nullable string) | Text input for optional string fields with proper null handling. |
 | **DateDictRenderer** | N/A (DateDict object) | Date picker for dictionary objects with year/month/day keys. |
@@ -199,19 +205,20 @@ The config GUI uses custom renderers to handle complex field types. Here's what'
 
 | Renderer | Widget Type | Status | Description |
 |----------|-------------|--------|-------------|
-| **EntityPickerRenderer** | `entity-picker` | ⚠️ TODO | Placeholder text field. Needs implementation: dropdown with HA entity filtering by domain specified in `x-ui-widget-filter`. |
-| **EntityListPickerRenderer** | `entity-list-picker` | ⚠️ TODO | Comma-separated text field. Needs implementation: multi-select dropdown with chips, filtered by `x-ui-widget-filter` domain. |
-| **EntityPickerOrBooleanRenderer** | `entity-picker-or-boolean` | ⚠️ TODO | Toggle between boolean checkbox and text field. Needs implementation: use proper entity picker dropdown when in entity mode. |
+| **EntityPickerRenderer** | `entity-picker` (⚠️ TODO - text input) | ⚠️ TODO | Placeholder text field. Needs implementation: dropdown with HA entity filtering by domain specified in `x-ui-widget-filter`. |
+| **EntityListPickerRenderer** | `entity-list-picker` (⚠️ TODO - text input) | ⚠️ TODO | Comma-separated text field. Needs implementation: multi-select dropdown with chips, filtered by `x-ui-widget-filter` domain. |
+| **EntityPickerOrBooleanRenderer** | `entity-picker-or-boolean` (⚠️ TODO - text toggle) | ⚠️ TODO | Toggle between boolean checkbox and text field. Needs implementation: use proper entity picker dropdown when in entity mode. |
+| **EntityPickerOrNumberRenderer** | `entity-picker-or-number` (⚠️ TODO - text toggle) | ⚠️ TODO | Toggle between numeric input and text field. Needs implementation: use proper entity picker dropdown when in entity mode. Handles FlexValue fields. |
 
 ### Renderer Priority
 
 Renderers are checked in order of registration (see `src/components/renderers/index.ts`):
 1. HelpButton (rank 10) - custom UISchema element
 2. MarkdownLabel (rank 5) - override default Label renderer
-3. EntityPickerOrNumber - FlexValue fields
-4. EntityPicker - single entity fields
-5. EntityListPicker - multiple entity fields
-6. EntityPickerOrBoolean - boolean or entity fields
+3. EntityPickerOrNumber - FlexValue fields (⚠️ TODO - currently placeholder)
+4. EntityPicker - single entity fields (⚠️ TODO - currently placeholder)
+5. EntityListPicker - multiple entity fields (⚠️ TODO - currently placeholder)
+6. EntityPickerOrBoolean - boolean or entity fields (⚠️ TODO - currently placeholder)
 7. OptionalString - nullable strings
 8. BoolOrString - boolean/string anyOf
 9. DateDict - date object fields
@@ -232,8 +239,18 @@ Renderers are checked in order of registration (see `src/components/renderers/in
 4. **Regenerate schemas**: 
    ```bash
    cd /Users/jeroens/dev/simonetti/config
+   source activate.sh  # Required: activates Python + Node environments
    python ./generate_uischema.py
    ```
+   
+   **Automatic validation**: The generator automatically validates the UISchema against JSONForms' TypeScript type definitions. This catches errors like:
+   - Invalid rule format (e.g., using list instead of dict)
+   - Missing required properties
+   - Invalid element types
+   - Any structural issues
+   
+   The validation uses JSONForms' official types, so it stays in sync with library updates automatically.
+
 5. **Test in GUI**:
    ```bash
    cd config-gui-poc
@@ -267,13 +284,21 @@ Pydantic Models (config/models/*.py)
     ┌─────────┴─────────┐
     ↓                    ↓
 schema.json        uischema.json
-    ↓                    ↓
-config-gui-poc/public/
+    |                    |
+    |                    ↓
+    |          TypeScript Validation
+    |          (JSONForms types)
+    |                    |
+    └──────────┬─────────┘
+               ↓
+    config-gui-poc/public/
          ↓
    React App (JSONForms)
          ↓
   Custom Renderers
 ```
+
+**Validation**: UISchema is automatically validated against JSONForms' TypeScript type definitions during generation. This ensures type safety and catches structural errors early.
 
 ---
 
@@ -288,11 +313,14 @@ config/
 │   │   └── ...
 │   └── versions/
 │       └── v0.py         # ConfigurationV0 root model
-├── generate_uischema.py  # Schema/UISchema generator (707 lines)
+├── generate_uischema.py  # Schema/UISchema generator (includes validation)
+├── activate.sh           # Environment activation (Python + Node.js)
 ├── config-gui-poc/
 │   ├── public/
 │   │   ├── schema.json     # Generated JSON Schema
 │   │   └── uischema.json   # Generated UISchema
+│   ├── validate-uischema.ts      # TypeScript validator
+│   ├── tsconfig.validate.json    # TypeScript config for validation
 │   ├── src/
 │   │   ├── components/
 │   │   │   └── renderers/  # Custom field renderers
@@ -463,6 +491,68 @@ server: Optional[str] = Field(
 
 The `server` field only appears when `engine` is mysql or postgresql.
 
+**⚠️ Important**: `x-ui-rules` must be a **dict/object**, not a list/array!
+
+**❌ Wrong** (will cause runtime error):
+```python
+"x-ui-rules": [
+    {
+        "effect": "SHOW",
+        "condition": {...}
+    }
+]
+```
+
+**✅ Correct**:
+```python
+"x-ui-rules": {
+    "effect": "SHOW",
+    "condition": {
+        "scope": "#/properties/field_name",
+        "schema": {"const": "value"}
+    }
+}
+```
+
+**Common patterns**:
+
+Show field when another field equals a value:
+```python
+"x-ui-rules": {
+    "effect": "SHOW",
+    "condition": {
+        "scope": "#/properties/source",
+        "schema": {"const": "entsoe"}
+    }
+}
+```
+
+Show field when another field is one of several values:
+```python
+"x-ui-rules": {
+    "effect": "SHOW",
+    "condition": {
+        "scope": "#/properties/engine",
+        "schema": {"enum": ["mysql", "postgresql"]}
+    }
+}
+```
+
+Hide field when another field equals a value (using "not"):
+```python
+"x-ui-rules": {
+    "effect": "SHOW",
+    "condition": {
+        "scope": "#/properties/source",
+        "schema": {
+            "not": {"const": "sqlite"}
+        }
+    }
+}
+```
+
+**Validation**: The schema generator will now catch invalid `x-ui-rules` formats and report clear errors.
+
 ### 4. Always Add Help Text
 
 Use `x-help` for every field to guide users:
@@ -481,14 +571,28 @@ field: str = Field(
 Before committing, run the generator to validate:
 
 ```bash
+source activate.sh  # Required for TypeScript validation
 python ./generate_uischema.py
 ```
+
+**Validation checks**:
+- Entity picker widgets have `x-ui-widget-filter` defined
+- UISchema structure matches JSONForms TypeScript types
+- Rules are properly formatted (dict, not list)
+- All required properties are present
 
 If any entity picker is missing `x-ui-widget-filter`, you'll see:
 
 ```
 ❌ Entity picker widgets missing x-ui-widget-filter:
   - sensor_entity -> SensorConfig (widget: entity-picker)
+```
+
+If the UISchema has structural errors, TypeScript validation will fail:
+
+```
+❌ UISchema TypeScript Validation Failed:
+   validate-uischema.ts(13,5): error TS2322: Type 'string[]' is not assignable to type 'Rule'.
 ```
 
 ### 6. Test Nested Objects

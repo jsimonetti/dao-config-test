@@ -304,6 +304,7 @@
           "description": "HA entity for calculated SOC",
           "title": "Entity Calculated Soc",
           "x-help": "Optional: Home Assistant sensor for calculated State of Charge. System can compute SOC from power flows if BMS sensor is unavailable.",
+          "x-order": 1,
           "x-ui-section": "Power Configuration",
           "x-ui-widget": "entity-picker",
           "x-ui-widget-filter": "sensor",
@@ -315,6 +316,7 @@
           "description": "DC-coupled solar panels attached to this battery",
           "title": "Solar",
           "x-help": "Optional: Configure DC-coupled solar panels directly connected to this battery inverter. DC coupling is more efficient than AC coupling. Leave empty for AC-coupled or grid-only batteries.",
+          "x-order": 1000,
           "x-ui-section": "Battery Connected Solar",
           "items": {
             "$ref": "#/$defs/SolarConfig"
@@ -1004,100 +1006,52 @@
           "x-ui-section": "General"
         },
         "show": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "default": "false",
+          "default": false,
           "description": "Whether to show graphics",
           "title": "Show",
+          "type": "boolean",
           "x-help": "Enable graph generation and display. Graphs show optimization results, prices, battery schedules. Set to true to enable, false to disable. Can be HA entity ID.",
-          "x-ui-section": "General",
-          "x-ui-widget": "entity-picker-or-boolean"
+          "x-ui-section": "General"
         },
         "battery balance": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "default": "true",
+          "default": true,
           "description": "Show battery balance in graphs",
           "title": "Battery Balance",
+          "type": "boolean",
           "x-help": "Display battery state of charge and power flows in graphs. Shows charge/discharge schedule over time.",
-          "x-ui-section": "General",
-          "x-ui-widget": "entity-picker-or-boolean"
+          "x-ui-section": "General"
         },
         "prices consumption": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "default": "true",
+          "default": true,
           "description": "Show consumption prices in graphs",
           "title": "Prices Consumption",
+          "type": "boolean",
           "x-help": "Display consumption prices (market + taxes + VAT) in graphs. Helps visualize expensive vs cheap periods.",
-          "x-ui-section": "General",
-          "x-ui-widget": "entity-picker-or-boolean"
+          "x-ui-section": "General"
         },
         "prices production": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "default": "false",
+          "default": false,
           "description": "Show production prices in graphs",
           "title": "Prices Production",
+          "type": "boolean",
           "x-help": "Display feed-in/production prices in graphs. Useful if you have solar feed-in to compare consumption vs production value.",
-          "x-ui-section": "General",
-          "x-ui-widget": "entity-picker-or-boolean"
+          "x-ui-section": "General"
         },
         "prices spot": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "default": "true",
+          "default": true,
           "description": "Show spot prices in graphs",
           "title": "Prices Spot",
+          "type": "boolean",
           "x-help": "Display raw day-ahead spot market prices (before taxes/markup) in graphs. Shows pure market price variations.",
-          "x-ui-section": "General",
-          "x-ui-widget": "entity-picker-or-boolean"
+          "x-ui-section": "General"
         },
         "average consumption": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "default": "true",
+          "default": true,
           "description": "Show average consumption in graphs",
           "title": "Average Consumption",
+          "type": "boolean",
           "x-help": "Display average/baseline consumption in graphs. Helps understand optimization impact relative to normal usage.",
-          "x-ui-section": "General",
-          "x-ui-widget": "entity-picker-or-boolean"
+          "x-ui-section": "General"
         }
       },
       "title": "GraphicsConfig",
@@ -1128,7 +1082,6 @@
       "x-docs-url": "https://github.com/corneel27/day-ahead/wiki/Grid-Configuration",
       "x-help": "# Grid Connection Configuration\n\nDefine electrical grid connection limits to prevent overload.\n\n## Maximum Grid Power\n\nBased on your main fuse/circuit breaker:\n- **1-phase 32A**: 7.4 kW (32A \u00d7 230V)\n- **3-phase 25A**: 17.3 kW (25A \u00d7 230V \u00d7 3)\n- **3-phase 35A**: 24.2 kW (35A \u00d7 230V \u00d7 3)\n\n## Why This Matters\n\nOptimizer ensures combined consumption never exceeds this limit:\n- Prevents main fuse from tripping\n- Ensures legal compliance with grid connection\n- Coordinates multiple high-power devices (EV, heat pump, boiler)\n\n## Tips\n\n- Check your electrical panel for fuse/breaker rating\n- Account for baseload when calculating available power\n- System will prioritize loads within this constraint\n- Consider upgrade if frequently hitting limits\n",
       "x-icon": "transmission-tower",
-      "x-order": 999,
       "x-ui-group": "Energy"
     },
     "HADatabaseConfig": {
@@ -1781,7 +1734,7 @@
           "title": "Source Day Ahead",
           "type": "string",
           "x-help": "Data source for day-ahead electricity market prices. 'nordpool' for Nordic/Baltic, 'entsoe' for European markets, 'tibber' if using Tibber integration.",
-          "x-ui-section": "General"
+          "x-ui-section": "Prices"
         },
         "entsoe_api_key": {
           "anyOf": [
@@ -1800,7 +1753,16 @@
           "title": "Entsoe Api Key",
           "x-docs-url": "https://transparency.entsoe.eu/",
           "x-help": "API key for ENTSO-E Transparency Platform. Required if source_day_ahead='entsoe'. Get free key at transparency.entsoe.eu. Use !secret for security.",
-          "x-ui-section": "General",
+          "x-ui-rules": {
+            "condition": {
+              "schema": {
+                "const": "entsoe"
+              },
+              "scope": "#/properties/source_day_ahead"
+            },
+            "effect": "SHOW"
+          },
+          "x-ui-section": "Prices",
           "x-validation-hint": "Required for entsoe source, use !secret"
         },
         "energy_taxes_consumption": {
@@ -1811,7 +1773,7 @@
           "title": "Energy Taxes Consumption",
           "type": "object",
           "x-help": "Energy taxes on consumption (excluding VAT) indexed by effective date. Format: {'2024-01-01': 0.05}. Use date when tariff changes.",
-          "x-ui-section": "General",
+          "x-ui-section": "Taxes",
           "x-unit": "\u20ac/kWh",
           "x-validation-hint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
         },
@@ -1823,7 +1785,7 @@
           "title": "Energy Taxes Production",
           "type": "object",
           "x-help": "Energy taxes on feed-in/production (excluding VAT) indexed by effective date. Often zero or negative. Format: {'2024-01-01': 0.0}.",
-          "x-ui-section": "General",
+          "x-ui-section": "Taxes",
           "x-unit": "\u20ac/kWh",
           "x-validation-hint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
         },
@@ -1835,7 +1797,7 @@
           "title": "Cost Supplier Consumption",
           "type": "object",
           "x-help": "Supplier markup/fees for consumption (excluding VAT) indexed by effective date. Fixed part of electricity cost. Format: {'2024-01-01': 0.02}.",
-          "x-ui-section": "General",
+          "x-ui-section": "Cost",
           "x-unit": "\u20ac/kWh",
           "x-validation-hint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
         },
@@ -1847,7 +1809,7 @@
           "title": "Cost Supplier Production",
           "type": "object",
           "x-help": "Supplier fees for feed-in/production (excluding VAT) indexed by effective date. May be negative (credit). Format: {'2024-01-01': -0.02}.",
-          "x-ui-section": "General",
+          "x-ui-section": "Cost",
           "x-unit": "\u20ac/kWh",
           "x-validation-hint": "Dict with YYYY-MM-DD keys, float values (ex VAT)"
         },
@@ -1859,7 +1821,7 @@
           "title": "Vat Consumption",
           "type": "object",
           "x-help": "VAT percentage on consumption indexed by effective date. Format: {'2024-01-01': 21}. Applied to market price + taxes + supplier costs.",
-          "x-ui-section": "General",
+          "x-ui-section": "Taxes",
           "x-unit": "%",
           "x-validation-hint": "Dict with YYYY-MM-DD keys, integer 0-100 values"
         },
@@ -1871,7 +1833,7 @@
           "title": "Vat Production",
           "type": "object",
           "x-help": "VAT percentage on feed-in/production indexed by effective date. Format: {'2024-01-01': 21}. Often same as consumption VAT.",
-          "x-ui-section": "General",
+          "x-ui-section": "Taxes",
           "x-unit": "%",
           "x-validation-hint": "Dict with YYYY-MM-DD keys, integer 0-100 values"
         },
@@ -1881,7 +1843,7 @@
           "title": "Last Invoice",
           "type": "string",
           "x-help": "Date of last electricity invoice. Used for calculating costs since last billing period. Format: YYYY-MM-DD. Update after receiving invoices.",
-          "x-ui-section": "General",
+          "x-ui-section": "Prices",
           "x-validation-hint": "Must be YYYY-MM-DD format"
         },
         "tax_refund": {
@@ -1896,7 +1858,7 @@
           "description": "Whether tax refund applies",
           "title": "Tax Refund",
           "x-help": "Enable tax refund calculation if eligible. Some regions/users get energy tax refunds for solar production. Can be boolean or HA entity ID.",
-          "x-ui-section": "General",
+          "x-ui-section": "Taxes",
           "x-ui-widget": "entity-picker-or-boolean"
         }
       },
@@ -1915,21 +1877,7 @@
       "x-docs-url": "https://github.com/corneel27/day-ahead/wiki/Pricing-Configuration",
       "x-help": "# Pricing & Tariff Configuration\n\nConfigure electricity market prices and tariff components for accurate cost optimization.\n\n## Price Components\n\nTotal electricity cost consists of:\n1. **Market price**: Day-ahead spot price (nordpool/entsoe/tibber)\n2. **Energy taxes**: Government energy taxes\n3. **Supplier costs**: Your supplier's markup/fees\n4. **VAT**: Value-added tax on sum of above\n\nConsumption price = (market + taxes + supplier) \u00d7 (1 + VAT)\n\n## Date-Based Tariffs\n\nAll tariff fields use date-indexed dictionaries:\n```json\n{\n  \"2024-01-01\": 0.05,\n  \"2024-07-01\": 0.06\n}\n```\n\nSystem uses tariff active on optimization date.\n\n## Data Sources\n\n- **nordpool**: Nord Pool (Nordic/Baltic markets)\n- **entsoe**: ENTSO-E Transparency Platform (all European markets)\n- **tibber**: Tibber API (if using Tibber as supplier)\n\n## Tips\n\n- All prices are EXCLUDING VAT (VAT applied separately)\n- Update tariffs when your supplier changes prices\n- Use !secret for API keys\n- Production costs often lower than consumption (or negative for feed-in credit)\n- Keep last_invoice updated for accurate cost tracking\n- Check your electricity bill for exact tariff components\n",
       "x-icon": "currency-eur",
-      "x-order": 11,
-      "x-ui-group": "Pricing & Markets",
-      "x-ui-rules": [
-        {
-          "condition": {
-            "schema": {
-              "not": {
-                "const": "entsoe"
-              }
-            },
-            "scope": "#/properties/source_day_ahead"
-          },
-          "effect": "HIDE"
-        }
-      ]
+      "x-ui-group": "Pricing"
     },
     "ReportConfig": {
       "additionalProperties": true,
@@ -2460,7 +2408,9 @@
       "default": "",
       "description": "Matplotlib graphical backend",
       "title": "Graphical Backend",
-      "type": "string"
+      "type": "string",
+      "x-ui-group": "Visualization",
+      "x-validation-hint": "Leave empty for auto-detect, use 'Agg' for headless"
     },
     "graphics": {
       "$ref": "#/$defs/GraphicsConfig",
@@ -2511,7 +2461,6 @@
       "description": "Dashboard web UI settings"
     },
     "battery": {
-      "description": "Battery configurations",
       "items": {
         "$ref": "#/$defs/BatteryConfig"
       },
