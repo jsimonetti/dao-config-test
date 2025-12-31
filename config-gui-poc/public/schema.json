@@ -2289,24 +2289,32 @@
       "default": null,
       "description": "Latitude (auto-fetched from HA if not set)",
       "title": "Latitude",
+      "x-ui-group": "DAO",
+      "x-ui-section": "Your home",
       "type": "number"
     },
     "longitude": {
       "default": null,
       "description": "Longitude (auto-fetched from HA if not set)",
       "title": "Longitude",
+      "x-ui-group": "DAO",
+      "x-ui-section": "Your home",
       "type": "number"
     },
     "time_zone": {
       "default": null,
       "description": "Timezone (auto-fetched from HA if not set)",
       "title": "Time Zone",
+      "x-ui-group": "DAO",
+      "x-ui-section": "Your home",
       "type": "string"
     },
     "country": {
       "default": null,
       "description": "Country code (auto-fetched from HA if not set)",
       "title": "Country",
+      "x-ui-group": "DAO",
+      "x-ui-section": "Your home",
       "type": "string"
     },
     "meteoserver-key": {
@@ -2319,7 +2327,9 @@
         }
       ],
       "description": "Meteoserver API key (can use !secret)",
-      "title": "Meteoserver-Key"
+      "title": "Meteoserver-Key",
+      "x-ui-group": "DAO",
+      "x-ui-section": "Weather"
     },
     "meteoserver-model": {
       "default": "harmonie",
@@ -2329,12 +2339,16 @@
         "gfs"
       ],
       "title": "Meteoserver-Model",
-      "type": "string"
+      "type": "string",
+      "x-ui-group": "DAO",
+      "x-ui-section": "Weather"
     },
     "meteoserver-attemps": {
       "default": 2,
       "description": "Number of meteoserver fetch attempts",
       "title": "Meteoserver-Attemps",
+      "x-ui-group": "DAO",
+      "x-ui-section": "Weather",
       "minimum": 1,
       "type": "number"
     },
@@ -2353,12 +2367,14 @@
         "error"
       ],
       "title": "Logging Level",
-      "type": "string"
+      "type": "string",
+      "x-ui-group": "DAO"
     },
     "protocol api": {
       "default": null,
       "description": "API protocol",
       "title": "Protocol Api",
+      "x-ui-group": "DAO",
       "enum": [
         "http",
         "https"
@@ -2366,43 +2382,57 @@
       "type": "string"
     },
     "use_calc_baseload": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "type": "string"
-        }
-      ],
-      "default": "false",
+      "default": false,
       "description": "Whether to calculate baseload automatically",
-      "title": "Use Calc Baseload"
+      "title": "Use Calc Baseload",
+      "type": "boolean",
+      "x-order": 101,
+      "x-ui-section": "Baseload"
     },
     "baseload calc periode": {
       "default": 56,
       "description": "Period in days for baseload calculation",
       "minimum": 1,
       "title": "Baseload Calc Periode",
-      "type": "integer"
+      "type": "integer",
+      "x-order": 102,
+      "x-ui-rules": {
+        "condition": {
+          "schema": {
+            "enum": [
+              true
+            ]
+          },
+          "scope": "#/properties/use_calc_baseload"
+        },
+        "effect": "SHOW"
+      },
+      "x-ui-section": "Baseload"
     },
     "baseload": {
-      "anyOf": [
-        {
-          "type": "number"
-        },
-        {
-          "items": {
-            "type": "number"
-          },
-          "type": "array"
-        },
-        {
-          "type": "null"
-        }
-      ],
       "default": null,
-      "description": "Baseload power consumption (watts) - single value or 24 hourly values",
-      "title": "Baseload"
+      "description": "Baseload power consumption (watts) - 24 hourly values",
+      "title": "Baseload",
+      "x-help": "Baseload power consumption in watts for each hour of the day (24 values). Leave empty to use calculated baseload.",
+      "x-order": 103,
+      "x-ui-rules": {
+        "condition": {
+          "schema": {
+            "enum": [
+              true
+            ]
+          },
+          "scope": "#/properties/use_calc_baseload"
+        },
+        "effect": "HIDE"
+      },
+      "x-ui-section": "Baseload",
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 24,
+      "minItems": 24,
+      "type": "array"
     },
     "graphical backend": {
       "default": "",
@@ -2424,7 +2454,9 @@
         "15min"
       ],
       "title": "Interval",
-      "type": "string"
+      "type": "string",
+      "x-order": 1,
+      "x-ui-section": "Optimization"
     },
     "strategy": {
       "default": "minimize cost",
@@ -2434,7 +2466,9 @@
         "minimize consumption"
       ],
       "title": "Strategy",
-      "type": "string"
+      "type": "string",
+      "x-order": 2,
+      "x-ui-section": "Optimization"
     },
     "notifications": {
       "default": null,

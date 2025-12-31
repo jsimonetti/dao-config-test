@@ -136,9 +136,12 @@ def extract_x_ui_group_from_property(prop_schema: Dict[str, Any], defs: Dict[str
     For $ref types, resolve and check the definition.
     For anyOf types (complex unions), check the first non-null option.
     """
-    # Check if property has x-ui-group directly
-    if "x-ui-group" in prop_schema:
-        return prop_schema.get("x-ui-group", "General"), prop_schema.get("x-order", 999)
+    # Check if property has x-ui-group or x-order directly
+    group = prop_schema.get("x-ui-group", None)
+    order = prop_schema.get("x-order", 999)
+    
+    if group is not None:
+        return group, order
     
     # Check if it's a $ref - resolve it (handles flattened Optional types)
     if "$ref" in prop_schema:
@@ -166,7 +169,7 @@ def extract_x_ui_group_from_property(prop_schema: Dict[str, Any], defs: Dict[str
             if "x-ui-group" in resolved:
                 return resolved.get("x-ui-group", "General"), resolved.get("x-order", 999)
     
-    return "General", 999
+    return "General", order
 
 
 def validate_entity_picker_filters(schema: Dict[str, Any], defs: Dict[str, Any]) -> None:
@@ -760,9 +763,9 @@ def main():
                 # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
                 if isinstance(element, list):
                     for elem in element:
-                        controls_with_meta.append((elem, section_name, collapse_state, 999))
+                        controls_with_meta.append((elem, section_name, collapse_state, order))
                 else:
-                    controls_with_meta.append((element, section_name, collapse_state, 999))
+                    controls_with_meta.append((element, section_name, collapse_state, order))
             
             # Group controls by section and create Group layouts
             group_elements = group_controls_by_section(controls_with_meta)
@@ -788,9 +791,9 @@ def main():
             # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
             if isinstance(element, list):
                 for elem in element:
-                    controls_with_meta.append((elem, section_name, collapse_state, 999))
+                    controls_with_meta.append((elem, section_name, collapse_state, order))
             else:
-                controls_with_meta.append((element, section_name, collapse_state, 999))
+                controls_with_meta.append((element, section_name, collapse_state, order))
         
         # Group controls by section and create Group layouts
         group_elements = group_controls_by_section(controls_with_meta)
