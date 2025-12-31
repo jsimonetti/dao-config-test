@@ -2417,20 +2417,14 @@
       "description": "Graphics and visualization settings"
     },
     "interval": {
-      "anyOf": [
-        {
-          "type": "number"
-        },
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
+      "default": "1hour",
       "description": "Optimization interval in minutes",
-      "title": "Interval"
+      "enum": [
+        "1hour",
+        "15min"
+      ],
+      "title": "Interval",
+      "type": "string"
     },
     "strategy": {
       "default": "minimize cost",
@@ -2483,7 +2477,8 @@
         "$ref": "#/$defs/EVConfig"
       },
       "title": "Electric Vehicle",
-      "type": "array"
+      "type": "array",
+      "x-ui-section": "Vehicles"
     },
     "machines": {
       "description": "Appliance/machine configurations",
@@ -2491,7 +2486,8 @@
         "$ref": "#/$defs/MachineConfig"
       },
       "title": "Machines",
-      "type": "array"
+      "type": "array",
+      "x-ui-section": "Machines"
     },
     "boiler": {
       "default": null,

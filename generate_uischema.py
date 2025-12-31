@@ -8,10 +8,14 @@ a complete JSONForms UISchema with proper grouping, ordering, and controls.
 
 import json
 import sys
+import argparse
 from pathlib import Path
 from typing import Any, Dict, Tuple
 from collections import defaultdict
 import subprocess
+
+# Global flag for quiet mode
+QUIET = False
 
 
 def replace_flexvalue_refs(schema: Dict[str, Any]) -> Dict[str, Any]:
@@ -250,7 +254,7 @@ def validate_entity_picker_filters(schema: Dict[str, Any], defs: Dict[str, Any])
         raise ValueError(error_msg)
 
 
-def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], defs: Dict[str, Any]) -> Dict[str, Any] | list[Dict[str, Any]]:
+def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], defs: Dict[str, Any], source_class: str = None) -> Dict[str, Any] | list[Dict[str, Any]]:
     """
     Generate UISchema element(s) for a single property from the root schema.
     
@@ -258,6 +262,12 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
     
     For arrays with help text, returns a list: [HelpButton, Control]
     Otherwise returns a single Control dict.
+    
+    Args:
+        prop_name: Property name
+        prop_schema: Property JSON schema
+        defs: Schema definitions
+        source_class: Python class name for source tracking (e.g., "PricingConfig")
     """
     scope = f"#/properties/{prop_name}"
     
@@ -273,6 +283,10 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
         options["widget"] = prop_schema["x-ui-widget"]
     if "x-ui-widget-filter" in prop_schema:
         options["widgetFilter"] = prop_schema["x-ui-widget-filter"]
+    
+    # Add source location for debugging
+    if source_class:
+        options["x-source"] = f"{source_class}.{prop_name}"
     
     # Extract rule from x-ui-rules
     rule = None
@@ -297,7 +311,9 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
         
         # Generate detail UISchema for nested objects (like HADatabaseConfig)
         if "properties" in resolved:
-            detail_elements = generate_detail_uischema(resolved, defs)
+            # Extract source class from resolved definition
+            nested_class = resolved.get("title", prop_name)
+            detail_elements = generate_detail_uischema(resolved, defs, nested_class)
             if detail_elements:
                 options["detail"] = {
                     "type": "VerticalLayout",
@@ -321,7 +337,8 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
                 options["icon"] = resolved.get("x-icon")
             
             # Generate detail UISchema for array items
-            detail_elements = generate_detail_uischema(resolved, defs)
+            nested_class = resolved.get("title", prop_name)
+            detail_elements = generate_detail_uischema(resolved, defs, nested_class)
             if detail_elements:
                 options["detail"] = {
                     "type": "VerticalLayout",
@@ -501,7 +518,7 @@ def group_controls_by_section(controls_with_meta: list, model_help: str = None) 
     return elements
 
 
-def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any]) -> list:
+def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any], source_class: str = None) -> list:
     """
     Generate UISchema elements for properties within an array item or nested object.
     
@@ -509,6 +526,11 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any]) -> 
     and groups them by x-ui-section into Group layouts.
     
     If the item_def has x-help at root level, adds a collapsible Help section at the bottom.
+    
+    Args:
+        item_def: Item definition with properties
+        defs: Schema definitions
+        source_class: Python class name for source tracking
     """
     if "properties" not in item_def:
         return []
@@ -596,6 +618,10 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any]) -> 
             "options": options if options else {}
         }
         
+        # Add source location for debugging
+        if source_class:
+            control["options"]["x-source"] = f"{source_class}.{prop_name}"
+        
         # Add rule if present
         if rule:
             control["rule"] = rule
@@ -641,7 +667,8 @@ def validate_uischema(uischema: Dict[str, Any]) -> None:
         )
         
         if result.returncode == 0:
-            print("✅ UISchema TypeScript validation passed")
+            if not QUIET:
+                print("✅ UISchema TypeScript validation passed")
         else:
             print("\n❌ UISchema TypeScript Validation Failed:")
             print(result.stdout)
@@ -664,7 +691,8 @@ def main():
     sys.path.insert(0, str(Path(__file__).parent))
     from config.versions.v0 import ConfigurationV0
     
-    print("Generating schema from ConfigurationV0...")
+    if not QUIET:
+        print("Generating schema from ConfigurationV0...")
     
     # Generate JSON Schema from root model
     schema = ConfigurationV0.model_json_schema(mode='serialization')
@@ -679,13 +707,16 @@ def main():
     properties = schema.get("properties", {})
     defs = schema.get("$defs", {})
     
-    print(f"Found {len(properties)} root properties")
-    print(f"Found {len(defs)} definitions")
+    if not QUIET:
+        print(f"Found {len(properties)} root properties")
+        print(f"Found {len(defs)} definitions")
     
     # Validate entity picker widgets have filters defined
-    print("\nValidating entity picker widgets...")
+    if not QUIET:
+        print("\nValidating entity picker widgets...")
     validate_entity_picker_filters(schema, defs)
-    print("✅ All entity picker widgets have filters")
+    if not QUIET:
+        print("✅ All entity picker widgets have filters")
     
     # Group properties by x-ui-group
     # Structure: {group_name: [(order, prop_name, prop_schema)]}
@@ -696,9 +727,17 @@ def main():
         if "const" in prop_schema:
             continue
         
+        # Extract source class name from $ref if present
+        source_class = None
+        if "$ref" in prop_schema:
+            ref_name = prop_schema["$ref"].split("/")[-1]
+            ref_def = defs.get(ref_name, {})
+            source_class = ref_def.get("title", ref_name)
+        
         group, order = extract_x_ui_group_from_property(prop_schema, defs)
-        groups[group].append((order, prop_name, prop_schema))
-        print(f"  {prop_name} -> {group} (order: {order})")
+        groups[group].append((order, prop_name, prop_schema, source_class))
+        if not QUIET:
+            print(f"  {prop_name} -> {group} (order: {order})")
     
     # Generate UISchema with Categorization (tabs)
     # Define fixed order for predefined tabs
@@ -715,9 +754,9 @@ def main():
             
             # Collect controls with their section information
             controls_with_meta = []
-            for order, prop_name, prop_schema in props_list:
+            for order, prop_name, prop_schema, source_class in props_list:
                 section_name, collapse_state = extract_section_info(prop_schema, defs)
-                element = generate_uischema_for_property(prop_name, prop_schema, defs)
+                element = generate_uischema_for_property(prop_name, prop_schema, defs, source_class)
                 # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
                 if isinstance(element, list):
                     for elem in element:
@@ -743,9 +782,9 @@ def main():
         
         # Collect controls with their section information
         controls_with_meta = []
-        for order, prop_name, prop_schema in props_list:
+        for order, prop_name, prop_schema, source_class in props_list:
             section_name, collapse_state = extract_section_info(prop_schema, defs)
-            element = generate_uischema_for_property(prop_name, prop_schema, defs)
+            element = generate_uischema_for_property(prop_name, prop_schema, defs, source_class)
             # Handle both single elements and lists (arrays with help text return [HelpButton, Control])
             if isinstance(element, list):
                 for elem in element:
@@ -775,7 +814,8 @@ def main():
         json.dump(combined_uischema, f, indent=2)
     
     # Now validate the written file with TypeScript
-    print("\nValidating UISchema...")
+    if not QUIET:
+        print("\nValidating UISchema...")
     validate_uischema(combined_uischema)
     
     # Write JSON Schema
@@ -784,12 +824,24 @@ def main():
     with open(schema_file, "w") as f:
         json.dump(schema, f, indent=2)
     
-    print(f"\n✅ Generated UISchema: {uischema_file}")
-    print(f"✅ Generated JSON Schema: {schema_file}")
-    print(f"   Properties: {len(properties)}")
-    print(f"   Definitions: {len(defs)}")
-    print(f"   Tabs created: {', '.join([cat['label'] for cat in categories])}")
+    if not QUIET:
+        print(f"\n✅ Generated UISchema: {uischema_file}")
+        print(f"✅ Generated JSON Schema: {schema_file}")
+        print(f"   Properties: {len(properties)}")
+        print(f"   Definitions: {len(defs)}")
+        print(f"   Tabs created: {', '.join([cat['label'] for cat in categories])}")
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Generate UISchema and JSON Schema from Pydantic models"
+    )
+    parser.add_argument(
+        "-q", "--quiet",
+        action="store_true",
+        help="Suppress non-error output"
+    )
+    args = parser.parse_args()
+    
+    QUIET = args.quiet
     main()

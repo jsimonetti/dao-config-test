@@ -12,6 +12,16 @@ import type { UISchemaElement } from '@jsonforms/core';
 import uischemaData from './public/uischema.json';
 
 /**
+ * Extract source location from element options
+ */
+function getSource(element: any): string | null {
+  if (element && element.options && element.options['x-source']) {
+    return element.options['x-source'];
+  }
+  return null;
+}
+
+/**
  * Recursively validate UISchema structure
  */
 function validateUISchema(element: any, path: string = 'root'): string[] {
@@ -22,6 +32,9 @@ function validateUISchema(element: any, path: string = 'root'): string[] {
     return errors;
   }
   
+  const source = getSource(element);
+  const location = source ? `${source} (${path})` : path;
+  
   // Check for rule property
   if ('rule' in element) {
     const rule = element.rule;
@@ -29,23 +42,23 @@ function validateUISchema(element: any, path: string = 'root'): string[] {
     // Rule must be a single object, not an array
     if (Array.isArray(rule)) {
       errors.push(
-        `${path}: 'rule' must be a single Rule object, not an array. ` +
+        `${location}: 'rule' must be a single Rule object, not an array. ` +
         `JSONForms only supports one rule per element. ` +
         `Found: ${JSON.stringify(rule).substring(0, 100)}...`
       );
     } else if (typeof rule === 'object' && rule !== null) {
       // Validate rule structure
       if (!('effect' in rule)) {
-        errors.push(`${path}.rule: Missing required 'effect' property`);
+        errors.push(`${location}.rule: Missing required 'effect' property`);
       }
       if (!('condition' in rule)) {
-        errors.push(`${path}.rule: Missing required 'condition' property`);
+        errors.push(`${location}.rule: Missing required 'condition' property`);
       }
       if ('effect' in rule) {
         const validEffects = ['HIDE', 'SHOW', 'ENABLE', 'DISABLE'];
         if (!validEffects.includes(rule.effect)) {
           errors.push(
-            `${path}.rule.effect: Invalid effect '${rule.effect}'. ` +
+            `${location}.rule.effect: Invalid effect '${rule.effect}'. ` +
             `Must be one of: ${validEffects.join(', ')}`
           );
         }
