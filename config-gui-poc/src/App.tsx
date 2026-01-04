@@ -27,9 +27,26 @@ import LockIcon from '@mui/icons-material/Lock'
 import UndoIcon from '@mui/icons-material/Undo'
 import CloseIcon from '@mui/icons-material/Close'
 import { createAjv } from '@jsonforms/core'
+import type { HAConnectionConfig } from './services/homeassistant'
+
+// API Configuration
+// In development: proxied through Vite to actual HA instance
+// In production: backend API handles this endpoint
+export const API_ENDPOINTS = {
+  HA_STATES: '/api/ha/states', // GET - Fetch all HA entities
+} as const
 
 // Context to share secrets with renderers
 export const SecretsContext = createContext<{ secrets: Record<string, string> }>({
+  secrets: {}
+})
+
+// Context to share Home Assistant connection config with renderers
+export const HAContext = createContext<{
+  config: HAConnectionConfig
+  secrets: Record<string, string>
+}>({
+  config: {},
   secrets: {}
 })
 
@@ -133,7 +150,7 @@ function App() {
     const styleSecretsTab = () => {
       const tabs = document.querySelectorAll('.MuiTab-root')
       tabs.forEach(tab => {
-        if (tab.textContent === 'Secrets') {
+        if (tab.textContent === 'Secrets' && tab instanceof HTMLElement) {
           tab.style.backgroundColor = 'rgba(244, 67, 54, 0.1)' // Light red background
           tab.style.borderRadius = '4px'
           tab.style.margin = '0 2px'
@@ -302,60 +319,70 @@ function App() {
       {/* Form content */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <SecretsContext.Provider value={{ secrets }}>
-          {uischema && schema && (
-            <>
-              <JsonForms
-                schema={schema}
-                uischema={uischema}
-                data={data}
-                renderers={allRenderers}
-                cells={materialCells}
-                onChange={(state) => {
-                  handleConfigChange(state)
-                  // Track category changes
-                  const activeTab = document.querySelector('.MuiTab-root.Mui-selected')
-                  if (activeTab) {
-                    const categoryLabel = activeTab.textContent || ''
-                    if (categoryLabel && currentCategory !== categoryLabel) {
-                      setCurrentCategory(categoryLabel)
+          <HAContext.Provider value={{
+            config: {
+              host: data.homeassistant?.host || data.homeassistant?.ip_address || null,
+              port: data.homeassistant?.ip_port || null,
+              token: data.homeassistant?.token || data.homeassistant?.hasstoken || null,
+              protocol: data.homeassistant?.protocol_api || null
+            },
+            secrets
+          }}>
+            {uischema && schema && (
+              <>
+                <JsonForms
+                  schema={schema}
+                  uischema={uischema}
+                  data={data}
+                  renderers={allRenderers}
+                  cells={materialCells}
+                  onChange={(state) => {
+                    handleConfigChange(state)
+                    // Track category changes
+                    const activeTab = document.querySelector('.MuiTab-root.Mui-selected')
+                    if (activeTab) {
+                      const categoryLabel = activeTab.textContent || ''
+                      if (categoryLabel && currentCategory !== categoryLabel) {
+                        setCurrentCategory(categoryLabel)
+                      }
                     }
-                  }
-                }}
-                ajv={createAjv()}
-              />
-              {/* Render Secrets Editor when Secrets tab is active */}
-              {currentCategory === 'Secrets' && (
-                <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-                  <Alert 
-                    severity="info" 
-                    icon={<LockIcon />}
-                    sx={{ mb: 3 }}
-                  >
-                    <Typography variant="body2" fontWeight="medium">
-                      Secrets are stored separately in <code>secrets.json</code>
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Changes to secrets require saving before they can be used in configuration fields.
-                      Use the "Save Secrets" button above when you have made changes.
-                    </Typography>
-                  </Alert>
-                  <Paper sx={{ p: 3 }}>
-                    <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LockIcon color="warning" />
-                      Secrets Management
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                      Manage secret values referenced in your configuration using !secret key_name.
-                    </Typography>
-                    <SecretsEditor 
-                      secrets={secrets}
-                      onChange={handleSecretsChange}
-                    />
-                  </Paper>
-                </Container>
-              )}
-            </>
-          )}
+                  }}
+                  ajv={createAjv()}
+                />
+                {/* Render Secrets Editor when Secrets tab is active */}
+                {currentCategory === 'Secrets' && (
+                  <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+                    <Alert 
+                      severity="info" 
+                      icon={<LockIcon />}
+                      sx={{ mb: 3 }}
+                    >
+                      <Typography variant="body2" fontWeight="medium">
+                        Secrets are stored separately in <code>secrets.json</code>
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Changes to secrets require saving before they can be used in configuration fields.
+                        Use the "Save Secrets" button above when you have made changes.
+                      </Typography>
+                    </Alert>
+                    <Paper sx={{ p: 3 }}>
+                      <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LockIcon color="warning" />
+                        Secrets Management
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Manage secret values referenced in your configuration using !secret key_name.
+                      </Typography>
+                      <SecretsEditor 
+                        secrets={secrets}
+                        onChange={handleSecretsChange}
+                      />
+                    </Paper>
+                  </Container>
+                )}
+              </>
+            )}
+          </HAContext.Provider>
         </SecretsContext.Provider>
       </Box>
 
