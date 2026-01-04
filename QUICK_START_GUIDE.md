@@ -47,10 +47,10 @@ The `generate_uischema.py` script extracts custom metadata from Pydantic models 
 
 | Extension | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `x-help` | `str` | Help text for the field (supports markdown) | `"Database engine where Home Assistant stores history"` |
-| `x-unit` | `str` | Display unit for numeric fields | `"Wh"`, `"€/kWh"`, `"port"` |
-| `x-ui-widget` | `str` | Custom widget type for rendering | `"entity-picker"`, `"entity-list-picker"`, `"entity-picker-or-boolean"` |
-| `x-ui-widget-filter` | `str` | Home Assistant entity domain filter (**required** for entity pickers) | `"sensor"`, `"switch"`, `"binary_sensor"` |
+| `x-help` | `str` | Help text for the field (tooltip) | `"Database engine where Home Assistant stores history"` |
+| `x-unit` | `str` | Display unit for fields. Also used for entity filtering. | `"Wh"`, `"€/kWh"`, `"%"`, `"W"` |
+| `x-ui-widget` | `str` | Custom widget type for rendering | `"entity-picker"`, `"entity-picker-or-number"`, `"entity-picker-or-boolean"` |
+| `x-ui-widget-filter` | `str` | Home Assistant entity domain filter (**required** for entity pickers). Comma-separated for multiple domains. | `"sensor"`, `"sensor,input_number"`, `"switch"` |
 | `x-ui-section` | `str` | Group fields into collapsible sections within a tab | `"Connection Settings"`, `"Database Config"` |
 | `x-ui-collapse` | `bool` | Whether section is collapsed by default | `true` (collapsed), `false` (expanded) |
 | `x-ui-rules` | `dict` | Conditional visibility rules (JSONForms rule format). **Must be a dict, not a list**. | `{"effect": "SHOW", "condition": {"scope": "#/properties/field", "schema": {...}}}` |
@@ -60,7 +60,7 @@ The `generate_uischema.py` script extracts custom metadata from Pydantic models 
 **Note on `x-order`**: This field serves two purposes:
 - **Within a section**: Fields are sorted by their `x-order` value (lower values appear first)
 - **Section ordering**: Sections are ordered by the minimum `x-order` value found in that section, then alphabetically
-  - Example: Section "A" with fields having `x-order: 10, 20` appears before Section "B" with `x-order: 100`
+  - Example: Section "B" with fields having `x-order: 10, 20` appears before Section "A" with `x-order: 100`
   - This allows logical ordering without renaming sections
 
 ### Model-Level Extensions
@@ -72,8 +72,7 @@ Add these to your model's `model_config.json_schema_extra` dictionary:
 | `x-help` | `str` | Model-level help text (markdown, appears as collapsible panel) | `"# Database Config\n\nComplete guide..."` |
 | `x-ui-group` | `str` | Tab name for this model's properties | `"Integration"`, `"Energy"`, `"Devices"` |
 | `x-order` | `int` | Sort order within tab | `10`, `20`, `30` |
-| `x-icon` | `str` | Icon identifier for the tab (future use) | `"database"`, `"solar"` |
-| `x-docs-url` | `str` | External documentation URL (future use) | `"https://github.com/.../wiki"` |
+| `x-docs-url` | `str` | External documentation URL (adds link to help panel) | `"https://github.com/.../wiki"` |
 
 ### Fixed Tab Order
 
@@ -85,29 +84,22 @@ The generator uses predefined tab ordering:
 
 Define tabs using `x-ui-group` on your model's `model_config.json_schema_extra`.
 
-### Entity Picker Validation
+### Entity Picker Features
 
-**CRITICAL**: All entity picker widgets MUST have `x-ui-widget-filter` defined, or schema generation will fail.
+**Entity pickers integrate with Home Assistant to provide live entity selection**:
 
-```python
-# ✅ Correct
-entity_id: str = Field(
-    description="Entity ID",
-    json_schema_extra={
-        "x-ui-widget": "entity-picker",
-        "x-ui-widget-filter": "sensor"  # Required!
-    }
-)
+- **Live entity loading**: Fetches entities from Home Assistant when dropdown opens
+- **Domain filtering**: Filter by entity domain using `x-ui-widget-filter` (e.g., `"sensor,input_number"`)
+- **Unit filtering**: Automatically filters by `unit_of_measurement` when `x-unit` is specified
+- **Smart caching**: 5-minute cache to minimize API calls
+- **Manual entry**: Users can type entity IDs directly if needed (freeSolo mode)
+- **Entity display**: Shows `entity_id - friendly_name (state unit)` format
+- **Domain grouping**: Entities organized by domain in dropdown
+- **Error handling**: Graceful fallback when Home Assistant is unreachable
 
-# ❌ Incorrect - will raise ValueError
-entity_id: str = Field(
-    description="Entity ID",
-    json_schema_extra={
-        "x-ui-widget": "entity-picker"
-        # Missing x-ui-widget-filter!
-    }
-)
-```
+**FlexValue fields**: Fields with union types (e.g., `int | str`) use toggle buttons to switch between number and entity modes. Entity IDs are saved as plain strings compatible with Pydantic's FlexValue pattern.
+
+**Configuration**: Entity pickers require Home Assistant connection details (host, port, token) to be configured in the application. The backend API proxies requests to Home Assistant to avoid CORS issues.
 
 ---
 
@@ -186,7 +178,7 @@ def validate_conditional_requirements(self) -> 'HADatabaseConfig':
 
 ## Custom Renderers
 
-The config GUI uses custom renderers to handle complex field types. Here's what's implemented:
+The config GUI uses custom renderers to handle complex field types. All renderers are fully implemented and functional.
 
 ### Completed Renderers
 
@@ -200,32 +192,25 @@ The config GUI uses custom renderers to handle complex field types. Here's what'
 | **EnumRenderer** | N/A (enum) | Dropdown for enum/Literal fields with proper typing. |
 | **NumberRenderer** | N/A (number) | Numeric input with validation, units display, and help text. |
 | **StringRenderer** | N/A (string) | Text input with validation hints and help text. |
-
-### TODO: Incomplete Renderers
-
-| Renderer | Widget Type | Status | Description |
-|----------|-------------|--------|-------------|
-| **EntityPickerRenderer** | `entity-picker` (⚠️ TODO - text input) | ⚠️ TODO | Placeholder text field. Needs implementation: dropdown with HA entity filtering by domain specified in `x-ui-widget-filter`. |
-| **EntityListPickerRenderer** | `entity-list-picker` (⚠️ TODO - text input) | ⚠️ TODO | Comma-separated text field. Needs implementation: multi-select dropdown with chips, filtered by `x-ui-widget-filter` domain. |
-| **EntityPickerOrBooleanRenderer** | `entity-picker-or-boolean` (⚠️ TODO - text toggle) | ⚠️ TODO | Toggle between boolean checkbox and text field. Needs implementation: use proper entity picker dropdown when in entity mode. |
-| **EntityPickerOrNumberRenderer** | `entity-picker-or-number` (⚠️ TODO - text toggle) | ⚠️ TODO | Toggle between numeric input and text field. Needs implementation: use proper entity picker dropdown when in entity mode. Handles FlexValue fields. |
+| **EntityPickerRenderer** | `entity-picker` | Live Home Assistant entity picker with domain/unit filtering, caching, and manual entry fallback. |
+| **EntityPickerOrNumberRenderer** | `entity-picker-or-number` | Toggle between number input and entity picker for FlexValue fields. Saves plain strings for entities. |
+| **EntityPickerOrBooleanRenderer** | `entity-picker-or-boolean` | Toggle between boolean toggles and entity picker for boolean or entity fields. |
 
 ### Renderer Priority
 
 Renderers are checked in order of registration (see `src/components/renderers/index.ts`):
 1. HelpButton (rank 10) - custom UISchema element
 2. MarkdownLabel (rank 5) - override default Label renderer
-3. EntityPickerOrNumber - FlexValue fields (⚠️ TODO - currently placeholder)
-4. EntityPicker - single entity fields (⚠️ TODO - currently placeholder)
-5. EntityListPicker - multiple entity fields (⚠️ TODO - currently placeholder)
-6. EntityPickerOrBoolean - boolean or entity fields (⚠️ TODO - currently placeholder)
-7. OptionalString - nullable strings
-8. BoolOrString - boolean/string anyOf
-9. DateDict - date object fields
-10. Enum - enum/Literal fields
-11. Number - numeric fields
-12. String - string fields
-13. Material renderers (default fallback)
+3. EntityPickerOrNumber (rank 15) - FlexValue fields with number or entity
+4. EntityPickerOrBoolean (rank 15) - Boolean or entity fields
+5. EntityPicker (rank 15) - Single entity fields with live HA integration
+6. OptionalString - nullable strings
+7. BoolOrString - boolean/string anyOf
+8. DateDict - date object fields
+9. Enum - enum/Literal fields
+10. Number - numeric fields
+11. String - string fields
+12. Material renderers (default fallback)
 
 ---
 
@@ -326,11 +311,18 @@ config/
 │   │   │   └── renderers/  # Custom field renderers
 │   │   │       ├── HelpButtonRenderer.tsx
 │   │   │       ├── MarkdownLabelRenderer.tsx
-│   │   │       ├── EntityPickerRenderer.tsx  # ⚠️ TODO
-│   │   │       ├── EntityListPickerRenderer.tsx  # ⚠️ TODO
-│   │   │       ├── EntityPickerOrBooleanRenderer.tsx  # ⚠️ TODO
+│   │   │       ├── EntityPickerRenderer.tsx
+│   │   │       ├── EntityPickerOrBooleanRenderer.tsx
 │   │   │       ├── EntityPickerOrNumberRenderer.tsx
+│   │   │       ├── BoolOrStringRenderer.tsx
+│   │   │       ├── OptionalStringRenderer.tsx
+│   │   │       ├── DateDictRenderer.tsx
+│   │   │       ├── EnumRenderer.tsx
+│   │   │       ├── NumberRenderer.tsx
+│   │   │       ├── StringRenderer.tsx
 │   │   │       └── index.ts  # Renderer registration
+│   │   ├── services/
+│   │   │   └── homeassistant.ts  # HA API integration
 │   │   └── App.tsx
 │   └── package.json
 └── QUICK_START_GUIDE.md  # This file
@@ -399,8 +391,20 @@ class DatabaseConfig(BaseModel):
         json_schema_extra={
             "x-help": "Select a temperature sensor from Home Assistant.",
             "x-ui-widget": "entity-picker",
-            "x-ui-widget-filter": "sensor",  # Required!
+            "x-ui-widget-filter": "sensor",  # Required! Filters dropdown to sensors only
+            "x-unit": "°C",  # Optional: Further filters to temperature sensors with °C unit
             "x-ui-section": "Sensors"
+        }
+    )
+    
+    max_power: int | str = Field(
+        description="Maximum power limit",
+        json_schema_extra={
+            "x-help": "Enter a number in watts or select a Home Assistant entity.",
+            "x-ui-widget": "entity-picker-or-number",
+            "x-ui-widget-filter": "sensor,input_number",  # Multiple domains supported
+            "x-unit": "W",  # Shows unit label and filters entities by watt sensors
+            "x-ui-section": "Power Configuration"
         }
     )
     
@@ -423,8 +427,7 @@ Complete guide for database setup.
 ''',
             'x-ui-group': 'Integration',  # Tab name
             'x-order': 10,                # Tab sort order
-            'x-icon': 'database',         # Tab icon (future)
-            'x-docs-url': 'https://...'   # External docs (future)
+            'x-docs-url': 'https://github.com/user/repo/wiki/Integration'  # External docs link in help panel
         }
     )
 ```
@@ -566,7 +569,7 @@ field: str = Field(
 )
 ```
 
-### 5. Validate Entity Picker Filters
+### 5. Validate Entity Picker Configuration
 
 Before committing, run the generator to validate:
 
@@ -580,13 +583,6 @@ python ./generate_uischema.py
 - UISchema structure matches JSONForms TypeScript types
 - Rules are properly formatted (dict, not list)
 - All required properties are present
-
-If any entity picker is missing `x-ui-widget-filter`, you'll see:
-
-```
-❌ Entity picker widgets missing x-ui-widget-filter:
-  - sensor_entity -> SensorConfig (widget: entity-picker)
-```
 
 If the UISchema has structural errors, TypeScript validation will fail:
 
@@ -653,27 +649,28 @@ json_schema_extra={
 
 ## Next Steps
 
-### Phase 1: Basic GUI ✅ Complete
-- [x] Schema generation
-- [x] Tab ordering
-- [x] Section grouping
-- [x] Collapsible sections
-- [x] Model-level help display
-- [x] Markdown rendering
+### Completed Features ✅
+- [x] Schema generation with TypeScript validation
+- [x] Tab ordering and organization
+- [x] Section grouping with collapsible sections
+- [x] Model-level help display with markdown
+- [x] Field-level help tooltips
+- [x] Custom renderers for all field types
+- [x] Entity picker with live Home Assistant integration
+- [x] Domain and unit-based entity filtering
+- [x] FlexValue renderers (number/entity, boolean/entity toggles)
+- [x] Entity caching and error handling
+- [x] Secrets management UI
+- [x] Visual polish and user experience refinements
 
-### Phase 2: Entity Pickers ⚠️ In Progress
-- [ ] EntityPickerRenderer implementation
-- [ ] EntityListPickerRenderer implementation
-- [ ] EntityPickerOrBooleanRenderer implementation
-- [ ] Home Assistant API integration
-- [ ] Entity domain filtering
-
-### Phase 3: Advanced Features
-- [ ] Secrets manager integration
+### Future Enhancements
+- [ ] Backend API proxy for Home Assistant integration
+- [ ] Entity list picker (multi-select with chips)
 - [ ] Configuration validation preview
 - [ ] Import/export configurations
-- [ ] Field-level markdown help (tooltips)
 - [ ] Real-time entity state preview
+- [ ] Form-wide validation feedback
+- [ ] Configuration diff viewer
 
 ---
 

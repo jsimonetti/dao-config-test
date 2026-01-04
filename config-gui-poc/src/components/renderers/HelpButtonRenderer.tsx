@@ -1,9 +1,10 @@
 import { rankWith, uiTypeIs } from '@jsonforms/core'
 import { withJsonFormsControlProps } from '@jsonforms/react'
-import { Button, Collapse, Box, Paper } from '@mui/material'
+import { Button, Collapse, Box, Paper, Link } from '@mui/material'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -12,6 +13,7 @@ import remarkGfm from 'remark-gfm'
  * Custom renderer for help buttons that expand/collapse markdown content inline.
  * 
  * Renders a help icon button that toggles a collapsible panel with the help text.
+ * If docsUrl is provided, adds an external documentation link at the bottom.
  */
 const HelpButtonRenderer = ({ uischema, visible }: any) => {
   const [open, setOpen] = useState(false)
@@ -20,6 +22,7 @@ const HelpButtonRenderer = ({ uischema, visible }: any) => {
   
   const helpText = uischema.options?.helpText
   const title = uischema.options?.helpTitle || 'Help'
+  const docsUrl = uischema.options?.docsUrl
   
   if (!helpText) return null
 
@@ -86,6 +89,27 @@ const HelpButtonRenderer = ({ uischema, visible }: any) => {
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {helpText}
           </ReactMarkdown>
+          
+          {docsUrl && (
+            <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+              <Link
+                href={docsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  fontWeight: 500,
+                  textDecoration: 'none',
+                  '&:hover': { textDecoration: 'underline' }
+                }}
+              >
+                External Documentation
+                <OpenInNewIcon fontSize="small" />
+              </Link>
+            </Box>
+          )}
         </Paper>
       </Collapse>
     </Box>

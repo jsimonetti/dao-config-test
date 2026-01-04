@@ -11,8 +11,10 @@ import {
   IconButton,
   Tooltip,
   Chip,
+  Link,
 } from '@mui/material'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import WarningIcon from '@mui/icons-material/Warning'
 
 /**
@@ -37,6 +39,7 @@ const EntityListPickerRenderer: React.FC<ControlProps> = ({
   const help = uischema?.options?.help
   const unit = uischema?.options?.unit
   const validationHint = uischema?.options?.validationHint
+  const docsUrl = uischema?.options?.docsUrl
   
   const hasError = Boolean(errors && errors.length > 0)
   const errorMessage = hasError ? errors : undefined
@@ -62,6 +65,20 @@ const EntityListPickerRenderer: React.FC<ControlProps> = ({
           <Tooltip title={help} arrow>
             <IconButton size="small" sx={{ p: 0 }}>
               <HelpOutlineIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </IconButton>
+          </Tooltip>
+        )}
+        {docsUrl && (
+          <Tooltip title="External Documentation" arrow>
+            <IconButton
+              size="small"
+              sx={{ p: 0 }}
+              component={Link}
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <OpenInNewIcon sx={{ fontSize: 18, color: 'primary.main' }} />
             </IconButton>
           </Tooltip>
         )}

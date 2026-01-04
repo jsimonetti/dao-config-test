@@ -14,9 +14,11 @@ import {
   CircularProgress,
   Alert,
   ListSubheader,
+  Link,
 } from '@mui/material'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { HAContext, API_ENDPOINTS } from '../../App'
 import {
   fetchHAEntities,
@@ -73,6 +75,7 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
   const validationHint = uischema?.options?.validationHint
   const widgetFilter = uischema?.options?.widgetFilter // e.g., "sensor,input_number"
   const unitFilter = unit // Use x-unit for filtering entities by unit_of_measurement
+  const docsUrl = uischema?.options?.docsUrl
   
   const hasError = Boolean(errors && errors.length > 0)
   const errorMessage = hasError ? errors : undefined
@@ -154,6 +157,20 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
           <Tooltip title={help} arrow>
             <IconButton size="small" sx={{ p: 0 }}>
               <HelpOutlineIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </IconButton>
+          </Tooltip>
+        )}
+        {docsUrl && (
+          <Tooltip title="External Documentation" arrow>
+            <IconButton
+              size="small"
+              sx={{ p: 0 }}
+              component={Link}
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <OpenInNewIcon sx={{ fontSize: 18, color: 'primary.main' }} />
             </IconButton>
           </Tooltip>
         )}

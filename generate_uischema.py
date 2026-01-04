@@ -309,6 +309,8 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
         options["widget"] = prop_schema["x-ui-widget"]
     if "x-ui-widget-filter" in prop_schema:
         options["widgetFilter"] = prop_schema["x-ui-widget-filter"]
+    if "x-docs-url" in prop_schema:
+        options["docsUrl"] = prop_schema["x-docs-url"]
     
     # Add source location for debugging
     if source_class:
@@ -359,8 +361,6 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
                 options["title"] = resolved.get("title")
             if "x-docs-url" in resolved and "docsUrl" not in options:
                 options["docsUrl"] = resolved.get("x-docs-url")
-            if "x-icon" in resolved and "icon" not in options:
-                options["icon"] = resolved.get("x-icon")
             
             # Generate detail UISchema for array items
             nested_class = resolved.get("title", prop_name)
@@ -413,16 +413,19 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
         # Remove help from control options since we're showing it as a button
         del options["help"]
         
-        return [
-            {
-                "type": "HelpButton",
-                "options": {
-                    "helpText": help_text,
-                    "helpTitle": "Help"
-                }
-            },
-            control
-        ]
+        help_button = {
+            "type": "HelpButton",
+            "options": {
+                "helpText": help_text,
+                "helpTitle": "Help"
+            }
+        }
+        
+        # Add docsUrl if present
+        if "docsUrl" in options:
+            help_button["options"]["docsUrl"] = options["docsUrl"]
+        
+        return [help_button, control]
     
     return control
 
@@ -499,13 +502,14 @@ def extract_section_info(prop_schema: Dict[str, Any], defs: Dict[str, Any], use_
     return section, collapse
 
 
-def group_controls_by_section(controls_with_meta: list, model_help: str = None) -> list:
+def group_controls_by_section(controls_with_meta: list, model_help: str = None, model_docs_url: str = None) -> list:
     """
     Group controls by x-ui-section and create Group layouts.
     
     Args:
         controls_with_meta: List of (control_dict, section_name, collapse_state, order) tuples
         model_help: Optional model-level help text to prepend to first section
+        model_docs_url: Optional model-level documentation URL to include with help
     
     Returns:
         List of Group elements or flat Control elements if only one section
@@ -546,6 +550,9 @@ def group_controls_by_section(controls_with_meta: list, model_help: str = None) 
                     "helpTitle": "Help"
                 }
             }
+            # Add docsUrl if present
+            if model_docs_url:
+                help_button["options"]["docsUrl"] = model_docs_url
             section_elements.append(help_button)
         
         # Sort controls by order and add to section
@@ -679,11 +686,12 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any], sou
         
         controls_with_meta.append((control, section_name, collapse_state, order))
     
-    # Extract model-level help if present
+    # Extract model-level help and docsUrl if present
     model_help = item_def.get("x-help")
+    model_docs_url = item_def.get("x-docs-url")
     
-    # Group controls by section and create Group layouts, passing model help
-    grouped_controls = group_controls_by_section(controls_with_meta, model_help)
+    # Group controls by section and create Group layouts, passing model help and docsUrl
+    grouped_controls = group_controls_by_section(controls_with_meta, model_help, model_docs_url)
     elements.extend(grouped_controls)
     
     return elements
@@ -829,6 +837,39 @@ def main():
             if not QUIET:
                 print(f"  {prop_name} -> {group} (order: {order})")
     
+    # Extract category-level metadata (icon, docsUrl) from models
+    # Structure: {group_name: {'icon': '...', 'docsUrl': '...'}}
+    category_metadata = {}
+    
+    for group_name, props_list in groups.items():
+        # Find the first model in this group that defines x-icon or x-docs-url
+        for order, prop_name, prop_schema, source_class, parent_prop_name, parent_section in props_list:
+            # Try to resolve the model definition
+            resolved_model = None
+            
+            if "$ref" in prop_schema:
+                resolved_model = resolve_ref(prop_schema["$ref"], defs)
+            elif "anyOf" in prop_schema:
+                for option in prop_schema["anyOf"]:
+                    if isinstance(option, dict) and option.get("type") != "null" and "$ref" in option:
+                        resolved_model = resolve_ref(option["$ref"], defs)
+                        break
+            elif prop_schema.get("type") == "array" and "items" in prop_schema and "$ref" in prop_schema["items"]:
+                resolved_model = resolve_ref(prop_schema["items"]["$ref"], defs)
+            
+            # Check if this model defines x-ui-group and matches our group_name
+            if resolved_model and resolved_model.get("x-ui-group") == group_name:
+                metadata = {}
+                if "x-docs-url" in resolved_model:
+                    metadata["docsUrl"] = resolved_model["x-docs-url"]
+                
+                # Only store if we found metadata
+                if metadata:
+                    category_metadata[group_name] = metadata
+                    if not QUIET:
+                        print(f"Category '{group_name}' metadata: {metadata}")
+                    break  # Use the first model that defines metadata for this group
+    
     # Generate UISchema with Categorization (tabs)
     # Define fixed order for predefined tabs
     FIXED_TAB_ORDER = ["DAO", "HASS"]
@@ -893,11 +934,18 @@ def main():
             # Group controls by section and create Group layouts
             group_elements = group_controls_by_section(controls_with_meta)
             
-            categories.append({
+            # Build category object
+            category = {
                 "type": "Category",
                 "label": group_name,
                 "elements": group_elements
-            })
+            }
+            
+            # Add metadata if available
+            if group_name in category_metadata:
+                category["options"] = category_metadata[group_name]
+            
+            categories.append(category)
     
     # Then, add remaining groups in sorted order
     remaining_groups = sorted(set(groups.keys()) - set(FIXED_TAB_ORDER))
@@ -957,11 +1005,18 @@ def main():
         # Group controls by section and create Group layouts
         group_elements = group_controls_by_section(controls_with_meta)
         
-        categories.append({
+        # Build category object
+        category = {
             "type": "Category",
             "label": group_name,
             "elements": group_elements
-        })
+        }
+        
+        # Add metadata if available
+        if group_name in category_metadata:
+            category["options"] = category_metadata[group_name]
+        
+        categories.append(category)
     
     combined_uischema = {
         "type": "Categorization",

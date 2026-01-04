@@ -12,8 +12,10 @@ import {
   Typography,
   IconButton,
   Tooltip,
+  Link,
 } from '@mui/material'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
 interface StringRendererProps extends ControlProps {
   data: string | null | undefined
@@ -35,6 +37,7 @@ const StringRenderer: React.FC<StringRendererProps> = ({
 
   const help = uischema?.options?.help
   const validationHint = uischema?.options?.validationHint
+  const docsUrl = uischema?.options?.docsUrl
 
   return (
     <Box sx={{ mb: 2 }}>
@@ -47,6 +50,20 @@ const StringRenderer: React.FC<StringRendererProps> = ({
           <Tooltip title={help} arrow>
             <IconButton size="small" sx={{ p: 0 }}>
               <HelpOutlineIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </IconButton>
+          </Tooltip>
+        )}
+        {docsUrl && (
+          <Tooltip title="External Documentation" arrow>
+            <IconButton
+              size="small"
+              sx={{ p: 0 }}
+              component={Link}
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <OpenInNewIcon sx={{ fontSize: 18, color: 'primary.main' }} />
             </IconButton>
           </Tooltip>
         )}

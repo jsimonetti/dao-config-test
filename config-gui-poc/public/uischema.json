@@ -13,7 +13,9 @@
               "type": "Control",
               "scope": "#/properties/interval",
               "options": {
-                "description": "Optimization interval in minutes"
+                "help": "Time interval for optimization calculations. '1hour' for hourly optimization, '15min' for quarter-hourly optimization (more detailed, higher computation).",
+                "description": "Optimization interval in minutes",
+                "docsUrl": "https://github.com/corneel72/day-ahead/wiki/Optimization"
               }
             },
             {
@@ -248,7 +250,8 @@
               "type": "HelpButton",
               "options": {
                 "helpText": "# Electric Vehicle Configuration\n\nOptimize EV charging based on electricity prices, solar production, and charging deadlines.\n\n## Charging Modes\n\n### Instant Charging\nUse `entity_instant_start` + `entity_instant_level` for immediate charging:\n- Trigger instant_start to charge now\n- System charges to instant_level immediately\n- Simpler but less cost-optimized\n\n### Scheduled Charging\nUse `charge_scheduler` for time-based optimization:\n- Set target level and ready datetime\n- System optimizes when to charge for lowest cost\n- Ensures vehicle is ready by deadline\n- More complex but better cost optimization\n\n## Requirements\n- Must configure EITHER instant charging OR scheduler (not both)\n- Vehicle must be home (device tracker)\n- Vehicle must be plugged in (binary sensor)\n- Charger must support amperage control\n\n## Tips\n- Use multiple charge stages for better efficiency modeling\n- Three-phase charging (11/22kW) much faster than single-phase (3.7/7.4kW)\n- Consider time-of-use tariffs when setting charge deadlines\n",
-                "helpTitle": "Help"
+                "helpTitle": "Help",
+                "docsUrl": "https://github.com/corneel27/day-ahead/wiki/EV-Configuration"
               }
             },
             {
@@ -258,7 +261,6 @@
                 "description": "Electric vehicle configurations",
                 "title": "EVConfig",
                 "docsUrl": "https://github.com/corneel27/day-ahead/wiki/EV-Configuration",
-                "icon": "car-electric",
                 "detail": {
                   "type": "VerticalLayout",
                   "elements": [
@@ -416,7 +418,8 @@
               "type": "HelpButton",
               "options": {
                 "helpText": "# Appliance / Machine Configuration\n\nOptimize operation of flexible load appliances (washing machines, dishwashers, dryers, etc.) based on electricity prices and constraints.\n\n## How It Works\n\nThe system optimizes when to start appliances within time windows:\n1. User sets start window (earliest start) and end window (must finish by)\n2. User selects program (each program has a power profile)\n3. System calculates optimal start time to minimize cost\n4. System writes calculated start time to HA entity\n5. User/automation triggers machine at optimal time\n\n## Programs\n\nEach program defines power consumption over time:\n- **Power profile**: List of watts per time interval\n- **Duration**: Length of power list (e.g., 5 values = 5 hours)\n- **'off' program**: Required, with zero power consumption\n\nExamples:\n- Eco wash: `[1800, 1800, 400, 400, 100]` (5 hours)\n- Quick wash: `[2200, 500, 100]` (3 hours)\n- Off: `[]` or `[0]`\n\n## Time Windows\n\n- **Start window**: Earliest allowed start (e.g., \"now\" or \"20:00\")\n- **End window**: Latest allowed finish (e.g., \"08:00 next day\")\n- System finds cheapest start time within window\n- Machine must complete before end window\n\n## Tips\n\n- Define accurate power profiles for each program\n- Set realistic time windows (at least program duration)\n- Wider time windows = better optimization opportunities\n- Combine with solar production forecasts\n- Use instant start for urgent loads\n- Multiple machines can be optimized together\n",
-                "helpTitle": "Help"
+                "helpTitle": "Help",
+                "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Machine-Configuration"
               }
             },
             {
@@ -426,7 +429,6 @@
                 "description": "Appliance/machine configurations",
                 "title": "MachineConfig",
                 "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Machine-Configuration",
-                "icon": "washing-machine",
                 "detail": {
                   "type": "VerticalLayout",
                   "elements": [
@@ -438,7 +440,8 @@
                           "type": "HelpButton",
                           "options": {
                             "helpText": "# Appliance / Machine Configuration\n\nOptimize operation of flexible load appliances (washing machines, dishwashers, dryers, etc.) based on electricity prices and constraints.\n\n## How It Works\n\nThe system optimizes when to start appliances within time windows:\n1. User sets start window (earliest start) and end window (must finish by)\n2. User selects program (each program has a power profile)\n3. System calculates optimal start time to minimize cost\n4. System writes calculated start time to HA entity\n5. User/automation triggers machine at optimal time\n\n## Programs\n\nEach program defines power consumption over time:\n- **Power profile**: List of watts per time interval\n- **Duration**: Length of power list (e.g., 5 values = 5 hours)\n- **'off' program**: Required, with zero power consumption\n\nExamples:\n- Eco wash: `[1800, 1800, 400, 400, 100]` (5 hours)\n- Quick wash: `[2200, 500, 100]` (3 hours)\n- Off: `[]` or `[0]`\n\n## Time Windows\n\n- **Start window**: Earliest allowed start (e.g., \"now\" or \"20:00\")\n- **End window**: Latest allowed finish (e.g., \"08:00 next day\")\n- System finds cheapest start time within window\n- Machine must complete before end window\n\n## Tips\n\n- Define accurate power profiles for each program\n- Set realistic time windows (at least program duration)\n- Wider time windows = better optimization opportunities\n- Combine with solar production forecasts\n- Use instant start for urgent loads\n- Multiple machines can be optimized together\n",
-                            "helpTitle": "Help"
+                            "helpTitle": "Help",
+                            "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Machine-Configuration"
                           }
                         },
                         {
@@ -534,7 +537,10 @@
             }
           ]
         }
-      ]
+      ],
+      "options": {
+        "docsUrl": "https://github.com/corneel27/day-ahead/wiki/EV-Configuration"
+      }
     },
     {
       "type": "Category",
@@ -548,7 +554,8 @@
               "type": "HelpButton",
               "options": {
                 "helpText": "# Battery Configuration\n\nConfigure your home battery storage system for optimal energy management and cost savings.\n\n## Key Settings\n- **Capacity**: Total storage capacity in kWh\n- **SOC Limits**: Upper and lower charge limits to protect battery health\n- **Power Stages**: Define charging/discharging efficiency curves\n- **Control Entities**: Home Assistant entities to control the battery\n\n## Tips\n- Set upper_limit to 80-90% for longer battery life\n- Configure charge/discharge stages for accurate optimization\n- Monitor battery degradation with cycle_cost setting\n",
-                "helpTitle": "Help"
+                "helpTitle": "Help",
+                "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Battery-Configuration"
               }
             },
             {
@@ -558,7 +565,6 @@
                 "description": "Battery configuration for optimization.",
                 "title": "BatteryConfig",
                 "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Battery-Configuration",
-                "icon": "battery-charging",
                 "detail": {
                   "type": "VerticalLayout",
                   "elements": [
@@ -570,7 +576,8 @@
                           "type": "HelpButton",
                           "options": {
                             "helpText": "# Battery Configuration\n\nConfigure your home battery storage system for optimal energy management and cost savings.\n\n## Key Settings\n- **Capacity**: Total storage capacity in kWh\n- **SOC Limits**: Upper and lower charge limits to protect battery health\n- **Power Stages**: Define charging/discharging efficiency curves\n- **Control Entities**: Home Assistant entities to control the battery\n\n## Tips\n- Set upper_limit to 80-90% for longer battery life\n- Configure charge/discharge stages for accurate optimization\n- Monitor battery degradation with cycle_cost setting\n",
-                            "helpTitle": "Help"
+                            "helpTitle": "Help",
+                            "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Battery-Configuration"
                           }
                         },
                         {
@@ -903,7 +910,8 @@
               "type": "HelpButton",
               "options": {
                 "helpText": "# Solar Panel Configuration\n\nConfigure your solar panel installations for accurate production forecasting.\n\n## Configuration Options\n\n### Simple Configuration\nFor panels all facing the same direction, use the flat config:\n- **tilt**: Panel angle (0-90\u00b0)\n- **orientation**: Direction panels face (0=south)\n- **capacity**: Total capacity in kWp\n- **yield**: Efficiency factor (0.8-0.9)\n\n### Advanced Configuration (Multiple Strings)\nFor panels facing different directions, use the 'strings' configuration:\n- Each string can have different tilt and orientation\n- Allows accurate modeling of complex installations\n- Example: Panels on both south and east-facing roofs\n\n## Tips\n- Use strings configuration for multi-directional installations\n- Include all inverter and cable losses in yield factor\n- Account for shading in yield factor\n",
-                "helpTitle": "Help"
+                "helpTitle": "Help",
+                "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Solar-Configuration"
               }
             },
             {
@@ -913,7 +921,6 @@
                 "description": "Solar panel configurations",
                 "title": "SolarConfig",
                 "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Solar-Configuration",
-                "icon": "solar-panel",
                 "detail": {
                   "type": "VerticalLayout",
                   "elements": [
@@ -925,7 +932,8 @@
                           "type": "HelpButton",
                           "options": {
                             "helpText": "# Solar Panel Configuration\n\nConfigure your solar panel installations for accurate production forecasting.\n\n## Configuration Options\n\n### Simple Configuration\nFor panels all facing the same direction, use the flat config:\n- **tilt**: Panel angle (0-90\u00b0)\n- **orientation**: Direction panels face (0=south)\n- **capacity**: Total capacity in kWp\n- **yield**: Efficiency factor (0.8-0.9)\n\n### Advanced Configuration (Multiple Strings)\nFor panels facing different directions, use the 'strings' configuration:\n- Each string can have different tilt and orientation\n- Allows accurate modeling of complex installations\n- Example: Panels on both south and east-facing roofs\n\n## Tips\n- Use strings configuration for multi-directional installations\n- Include all inverter and cable losses in yield factor\n- Account for shading in yield factor\n",
-                            "helpTitle": "Help"
+                            "helpTitle": "Help",
+                            "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Solar-Configuration"
                           }
                         },
                         {
@@ -1026,7 +1034,10 @@
             }
           ]
         }
-      ]
+      ],
+      "options": {
+        "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Battery-Configuration"
+      }
     },
     {
       "type": "Category",

@@ -19,10 +19,12 @@ import {
   Box,
   Typography,
   Tooltip,
+  Link,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
 interface DateDictRendererProps extends ControlProps {
   data: { [key: string]: number } | undefined
@@ -40,6 +42,7 @@ const DateDictRenderer: React.FC<DateDictRendererProps> = ({
   const entries = Object.entries(data || {})
   const unit = uischema?.options?.unit || ''
   const help = uischema?.options?.help || description
+  const docsUrl = uischema?.options?.docsUrl
 
   const handleDateChange = (oldDate: string, newDate: string) => {
     if (!data) return
@@ -79,6 +82,20 @@ const DateDictRenderer: React.FC<DateDictRendererProps> = ({
           <Tooltip title={help} arrow>
             <IconButton size="small" sx={{ p: 0 }}>
               <HelpOutlineIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </IconButton>
+          </Tooltip>
+        )}
+        {docsUrl && (
+          <Tooltip title="External Documentation" arrow>
+            <IconButton
+              size="small"
+              sx={{ p: 0 }}
+              component={Link}
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <OpenInNewIcon sx={{ fontSize: 18, color: 'primary.main' }} />
             </IconButton>
           </Tooltip>
         )}

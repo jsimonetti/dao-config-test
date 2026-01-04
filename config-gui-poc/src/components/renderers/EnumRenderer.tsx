@@ -13,8 +13,10 @@ import {
   Box,
   IconButton,
   Tooltip,
+  Link,
 } from '@mui/material'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
 interface EnumRendererProps extends ControlProps {
   data: string | undefined
@@ -36,6 +38,7 @@ const EnumRenderer: React.FC<EnumRendererProps> = ({
 
   const enumValues = schema.enum || []
   const help = uischema?.options?.help || description
+  const docsUrl = uischema?.options?.docsUrl
 
   return (
     <Box sx={{ mb: 2 }}>
@@ -47,6 +50,20 @@ const EnumRenderer: React.FC<EnumRendererProps> = ({
           <Tooltip title={help} arrow>
             <IconButton size="small" sx={{ p: 0 }}>
               <HelpOutlineIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </IconButton>
+          </Tooltip>
+        )}
+        {docsUrl && (
+          <Tooltip title="External Documentation" arrow>
+            <IconButton
+              size="small"
+              sx={{ p: 0 }}
+              component={Link}
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <OpenInNewIcon sx={{ fontSize: 18, color: 'primary.main' }} />
             </IconButton>
           </Tooltip>
         )}

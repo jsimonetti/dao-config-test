@@ -2516,6 +2516,8 @@
       ],
       "title": "Interval",
       "type": "string",
+      "x-docs-url": "https://github.com/corneel72/day-ahead/wiki/Optimization",
+      "x-help": "Time interval for optimization calculations. '1hour' for hourly optimization, '15min' for quarter-hourly optimization (more detailed, higher computation).",
       "x-order": 1,
       "x-ui-group": "DAO",
       "x-ui-section": "Optimization"
