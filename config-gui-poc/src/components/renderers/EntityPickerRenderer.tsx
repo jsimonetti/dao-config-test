@@ -157,13 +157,6 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
             </IconButton>
           </Tooltip>
         )}
-        {entities.length > 0 && (
-          <Tooltip title="Refresh entities" arrow>
-            <IconButton size="small" onClick={handleRefresh} disabled={loading}>
-              <RefreshIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
-        )}
       </Box>
       
       {(description || hasError || validationHint) && (
@@ -235,6 +228,19 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
               endAdornment: (
                 <>
                   {loading ? <CircularProgress color="inherit" size={20} /> : null}
+                  {entities.length > 0 && (
+                    <Tooltip title="Refresh entities" arrow>
+                      <IconButton
+                        size="small"
+                        onClick={handleRefresh}
+                        disabled={loading}
+                        edge="end"
+                        sx={{ mr: 0.5 }}
+                      >
+                        <RefreshIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   {params.InputProps.endAdornment}
                 </>
               ),
@@ -274,6 +280,9 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
     </Box>
   )
 }
+
+// Export unwrapped component for reuse in FlexValue renderers
+export { EntityPickerRenderer }
 
 // Tester that matches fields with x-ui-widget: entity-picker
 export const entityPickerTester = rankWith(
