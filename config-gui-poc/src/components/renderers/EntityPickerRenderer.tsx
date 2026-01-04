@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, forwardRef } from 'react'
 import {
   ControlProps,
   rankWith,
@@ -26,6 +26,23 @@ import {
   getCachedEntities,
   type HAEntityOption,
 } from '../../services/homeassistant'
+
+/**
+ * Custom listbox component that shows entity count in header
+ */
+const ListboxComponent = forwardRef<HTMLUListElement, React.HTMLAttributes<HTMLElement> & { entityCount?: number; widgetFilter?: string }>(function ListboxComponent(props, ref) {
+  const { children, entityCount, widgetFilter, ...other } = props
+  return (
+    <ul {...other} ref={ref}>
+      {entityCount !== undefined && entityCount > 0 && (
+        <ListSubheader sx={{ lineHeight: '32px', fontWeight: 600, bgcolor: 'action.hover' }}>
+          {entityCount} {widgetFilter || 'available'} {entityCount === 1 ? 'entity' : 'entities'}
+        </ListSubheader>
+      )}
+      {children}
+    </ul>
+  )
+})
 
 /**
  * Entity picker renderer with live Home Assistant entity loading
@@ -224,6 +241,13 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
             }}
           />
         )}
+        ListboxComponent={ListboxComponent}
+        slotProps={{
+          listbox: {
+            entityCount: entities.length,
+            widgetFilter: widgetFilter,
+          } as any,
+        }}
         freeSolo
         clearOnBlur={false}
         selectOnFocus
@@ -247,12 +271,6 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
           return '' // We handle grouping manually with ListSubheader
         }}
       />
-      
-      {entities.length > 0 && !error && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-          {entities.length} {widgetFilter || 'available'} entities loaded
-        </Typography>
-      )}
     </Box>
   )
 }

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, forwardRef } from 'react'
 import {
   ControlProps,
   rankWith,
@@ -28,6 +28,23 @@ import {
   getCachedEntities,
   type HAEntityOption,
 } from '../../services/homeassistant'
+
+/**
+ * Custom listbox component that shows entity count in header
+ */
+const ListboxComponent = forwardRef<HTMLUListElement, React.HTMLAttributes<HTMLElement> & { entityCount?: number; widgetFilter?: string }>(function ListboxComponent(props, ref) {
+  const { children, entityCount, widgetFilter, ...other } = props
+  return (
+    <ul {...other} ref={ref}>
+      {entityCount !== undefined && entityCount > 0 && (
+        <ListSubheader sx={{ lineHeight: '32px', fontWeight: 600, bgcolor: 'action.hover' }}>
+          {entityCount} {widgetFilter || 'available'} {entityCount === 1 ? 'entity' : 'entities'}
+        </ListSubheader>
+      )}
+      {children}
+    </ul>
+  )
+})
 
 interface EntityPickerOrNumberRendererProps extends ControlProps {
   data: number | string | object | undefined
@@ -292,6 +309,13 @@ const EntityPickerOrNumberRenderer: React.FC<EntityPickerOrNumberRendererProps> 
                   }}
                 />
               )}
+              ListboxComponent={ListboxComponent}
+              slotProps={{
+                listbox: {
+                  entityCount: entities.length,
+                  widgetFilter: widgetFilter,
+                } as any,
+              }}
               freeSolo
               clearOnBlur={false}
               selectOnFocus
@@ -315,11 +339,6 @@ const EntityPickerOrNumberRenderer: React.FC<EntityPickerOrNumberRendererProps> 
                 return ''
               }}
             />
-            {entities.length > 0 && !error && (
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                {entities.length} {widgetFilter || 'available'} entities loaded
-              </Typography>
-            )}
           </Box>
         )}
       </Box>
