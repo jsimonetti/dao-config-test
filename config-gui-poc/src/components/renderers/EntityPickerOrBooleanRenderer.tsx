@@ -57,6 +57,7 @@ const EntityPickerOrBooleanRenderer: React.FC<ControlProps> = ({
   const unit = uischema?.options?.unit
   const validationHint = uischema?.options?.validationHint
   const widgetFilter = uischema?.options?.widgetFilter
+  const unitFilter = unit // Use x-unit for filtering entities by unit_of_measurement
   
   // Determine if current value is a boolean or entity ID
   const isEntityId = typeof data === 'string'
@@ -73,7 +74,7 @@ const EntityPickerOrBooleanRenderer: React.FC<ControlProps> = ({
     if (!forceRefresh) {
       const cached = getCachedEntities()
       if (cached) {
-        const filtered = filterEntitiesByDomain(cached, widgetFilter)
+        const filtered = filterEntitiesByDomain(cached, widgetFilter, unitFilter)
         setEntities(filtered)
         return
       }
@@ -84,7 +85,7 @@ const EntityPickerOrBooleanRenderer: React.FC<ControlProps> = ({
     
     try {
       const allEntities = await fetchHAEntities(API_ENDPOINTS.HA_STATES, haConfig, secrets)
-      const filtered = filterEntitiesByDomain(allEntities, widgetFilter)
+      const filtered = filterEntitiesByDomain(allEntities, widgetFilter, unitFilter)
       setEntities(filtered)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to load entities'

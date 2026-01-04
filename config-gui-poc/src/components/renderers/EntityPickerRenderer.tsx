@@ -55,6 +55,7 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
   const unit = uischema?.options?.unit
   const validationHint = uischema?.options?.validationHint
   const widgetFilter = uischema?.options?.widgetFilter // e.g., "sensor,input_number"
+  const unitFilter = unit // Use x-unit for filtering entities by unit_of_measurement
   
   const hasError = Boolean(errors && errors.length > 0)
   const errorMessage = hasError ? errors : undefined
@@ -67,7 +68,7 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
     if (!forceRefresh) {
       const cached = getCachedEntities()
       if (cached) {
-        const filtered = filterEntitiesByDomain(cached, widgetFilter)
+        const filtered = filterEntitiesByDomain(cached, widgetFilter, unitFilter)
         setEntities(filtered)
         return
       }
@@ -78,7 +79,7 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
     
     try {
       const allEntities = await fetchHAEntities(API_ENDPOINTS.HA_STATES, haConfig, secrets)
-      const filtered = filterEntitiesByDomain(allEntities, widgetFilter)
+      const filtered = filterEntitiesByDomain(allEntities, widgetFilter, unitFilter)
       setEntities(filtered)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to load entities'
