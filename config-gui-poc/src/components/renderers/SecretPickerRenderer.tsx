@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import {
   ControlProps,
   rankWith,
@@ -10,14 +10,14 @@ import {
   Typography,
   IconButton,
   Tooltip,
-  Chip,
+  Autocomplete,
 } from '@mui/material'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
-import WarningIcon from '@mui/icons-material/Warning'
+import { SecretsContext } from '../../App'
 
 /**
- * Placeholder renderer for x-ui-widget: "secret-picker"
- * TODO: Implement proper secret picker with secrets.json integration
+ * Secret picker renderer for x-ui-widget: "secret-picker"
+ * Allows selection of secrets defined in secrets.json using !secret key_name syntax
  */
 const SecretPickerRenderer: React.FC<ControlProps> = ({
   data,
@@ -30,6 +30,8 @@ const SecretPickerRenderer: React.FC<ControlProps> = ({
   required,
   errors,
 }) => {
+  const { secrets } = useContext(SecretsContext)
+  
   if (!visible) {
     return null
   }
@@ -40,6 +42,14 @@ const SecretPickerRenderer: React.FC<ControlProps> = ({
   
   const hasError = Boolean(errors && errors.length > 0)
   const errorMessage = hasError ? errors : undefined
+  
+  // Get available secret keys
+  const secretKeys = Object.keys(secrets)
+  
+  // Parse current value - could be plain string or !secret reference
+  const isSecretRef = typeof data === 'string' && data.startsWith('!secret ')
+  const currentSecretKey = isSecretRef ? data.substring(8) : ''
+  const displayValue = isSecretRef ? data : (data || '')
 
   return (
     <Box sx={{ mb: 2 }}>
@@ -56,13 +66,6 @@ const SecretPickerRenderer: React.FC<ControlProps> = ({
             </IconButton>
           </Tooltip>
         )}
-        <Chip
-          icon={<WarningIcon />}
-          label="TODO: Secret Picker"
-          size="small"
-          color="warning"
-          sx={{ ml: 1 }}
-        />
       </Box>
       {(description || hasError || validationHint) && (
         <Typography variant="body2" sx={{ mb: 1 }}>
@@ -73,20 +76,42 @@ const SecretPickerRenderer: React.FC<ControlProps> = ({
         </Typography>
       )}
       
-      <TextField
-        type="text"
-        value={data || ''}
-        onChange={(e) => handleChange(path, e.target.value || null)}
-        fullWidth
-        size="small"
-        placeholder="Enter secret key or use !secret key_name"
-        error={hasError}
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            backgroundColor: '#fff3cd', // Yellow background
-          }
-        }}
-      />
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Autocomplete
+          freeSolo
+          options={secretKeys}
+          value={currentSecretKey}
+          onChange={(_, newValue) => {
+            if (newValue) {
+              handleChange(path, `!secret ${newValue}`)
+            } else {
+              handleChange(path, '')
+            }
+          }}
+          onInputChange={(_, newInputValue) => {
+            if (newInputValue && !newInputValue.startsWith('!secret ')) {
+              handleChange(path, `!secret ${newInputValue}`)
+            }
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              size="small"
+              placeholder="Select or type secret key"
+              error={hasError}
+            />
+          )}
+          sx={{ flex: 1 }}
+        />
+        <Typography variant="body2" color="text.secondary" sx={{ minWidth: 100 }}>
+          {secretKeys.length} secret{secretKeys.length !== 1 ? 's' : ''} available
+        </Typography>
+      </Box>
+      {displayValue && (
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+          Current: {displayValue}
+        </Typography>
+      )}
     </Box>
   )
 }

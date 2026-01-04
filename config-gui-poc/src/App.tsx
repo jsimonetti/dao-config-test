@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, createContext } from 'react'
 import { JsonForms } from '@jsonforms/react'
 import { materialCells } from '@jsonforms/material-renderers'
 import { allRenderers } from './components/renderers'
+import { SecretsEditor } from './components/SecretsEditor'
+import './App.css'
 import { 
   Box, 
   Container, 
@@ -15,12 +17,21 @@ import {
   DialogActions,
   IconButton,
   Toolbar,
-  AppBar
+  AppBar,
+  Tabs,
+  Tab,
+  Alert
 } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
+import LockIcon from '@mui/icons-material/Lock'
 import UndoIcon from '@mui/icons-material/Undo'
 import CloseIcon from '@mui/icons-material/Close'
 import { createAjv } from '@jsonforms/core'
+
+// Context to share secrets with renderers
+export const SecretsContext = createContext<{ secrets: Record<string, string> }>({
+  secrets: {}
+})
 
 interface UISchema {
   type: string
@@ -72,19 +83,43 @@ function App() {
     electric_vehicle: [],
     machines: []
   })
+  const [secrets, setSecrets] = useState<Record<string, string>>({})
+  const [originalSecrets, setOriginalSecrets] = useState<Record<string, string>>({})
+  const [currentCategory, setCurrentCategory] = useState<string>('General')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [saveDialogType, setSaveDialogType] = useState<'config' | 'secrets'>('config')
 
   useEffect(() => {
-    // Load combined UISchema and JSON Schema
+    // Load schemas and data
     Promise.all([
       fetch('/uischema.json').then(r => r.json()),
-      fetch('/schema.json').then(r => r.json())
+      fetch('/schema.json').then(r => r.json()),
+      fetch('/secrets.json').then(r => r.json()).catch(() => ({}))
     ])
-      .then(([uischemaData, schemaData]) => {
-        setUISchema(uischemaData)
+      .then(([uischemaData, schemaData, secretsData]) => {
+        // Add Secrets category to UISchema
+        const enhancedUISchema = {
+          ...uischemaData,
+          elements: [
+            ...(uischemaData.elements || []),
+            {
+              type: 'Category',
+              label: 'Secrets',
+              elements: [
+                {
+                  type: 'VerticalLayout',
+                  elements: [] // Empty but required for proper rendering
+                }
+              ]
+            }
+          ]
+        }
+        setUISchema(enhancedUISchema)
         setSchema(schemaData)
+        setSecrets(secretsData)
+        setOriginalSecrets(secretsData)
         setLoading(false)
       })
       .catch(err => {
@@ -93,12 +128,90 @@ function App() {
       })
   }, [])
 
-  const handleChange = (state: { data: any }) => {
+  // Style the Secrets tab with background color and track tab changes
+  useEffect(() => {
+    const styleSecretsTab = () => {
+      const tabs = document.querySelectorAll('.MuiTab-root')
+      tabs.forEach(tab => {
+        if (tab.textContent === 'Secrets') {
+          tab.style.backgroundColor = 'rgba(244, 67, 54, 0.1)' // Light red background
+          tab.style.borderRadius = '4px'
+          tab.style.margin = '0 2px'
+        }
+      })
+    }
+    
+    // Track tab changes
+    const trackTabChange = () => {
+      const activeTab = document.querySelector('.MuiTab-root.Mui-selected')
+      if (activeTab) {
+        const categoryLabel = activeTab.textContent || ''
+        if (categoryLabel && currentCategory !== categoryLabel) {
+          setCurrentCategory(categoryLabel)
+        }
+      }
+    }
+    
+    const timer = setTimeout(() => {
+      styleSecretsTab()
+      trackTabChange()
+    }, 100)
+    
+    const interval = setInterval(() => {
+      styleSecretsTab()
+      trackTabChange()
+    }, 300)
+    
+    // Add click listeners to tabs
+    const tabs = document.querySelectorAll('.MuiTab-root')
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        setTimeout(trackTabChange, 50)
+      })
+    })
+    
+    return () => {
+      clearTimeout(timer)
+      clearInterval(interval)
+    }
+  }, [uischema, currentCategory])
+
+  const secretsChanged = JSON.stringify(secrets) !== JSON.stringify(originalSecrets)
+
+  const handleConfigChange = (state: { data: any }) => {
     setData(state.data)
-    //console.log('Form data changed:', state.data)
   }
 
-  const handleSave = () => {
+  const handleSecretsChange = (newSecrets: Record<string, string>) => {
+    setSecrets(newSecrets)
+  }
+
+  const handleSaveConfig = () => {
+    setSaveDialogType('config')
+    setShowSaveDialog(true)
+  }
+
+  const handleSaveSecrets = async () => {
+    // TODO: Replace with actual backend API call
+    console.log('Saving secrets to backend:', secrets)
+    
+    // Simulate backend save - in real implementation, this would be an API call
+    // For now, just update originalSecrets to mark as saved
+    setOriginalSecrets(secrets)
+    
+    // Reload secrets to ensure config editor has latest
+    try {
+      const response = await fetch('/secrets.json')
+      if (response.ok) {
+        const freshSecrets = await response.json()
+        setSecrets(freshSecrets)
+        setOriginalSecrets(freshSecrets)
+      }
+    } catch (err) {
+      console.error('Failed to reload secrets:', err)
+    }
+    
+    setSaveDialogType('secrets')
     setShowSaveDialog(true)
   }
 
@@ -111,11 +224,19 @@ function App() {
     setShowSaveDialog(false)
   }
 
-  const handleCopyToClipboard = () => {
-    const jsonString = JSON.stringify(data, null, 2)
+  const handleCopyToClipboard = (type: 'config' | 'secrets' | 'both') => {
+    let jsonString = ''
+    if (type === 'config') {
+      jsonString = JSON.stringify(data, null, 2)
+    } else if (type === 'secrets') {
+      jsonString = JSON.stringify(secrets, null, 2)
+    } else {
+      jsonString = `// options.json\n${JSON.stringify(data, null, 2)}\n\n// secrets.json\n${JSON.stringify(secrets, null, 2)}`
+    }
+    
     navigator.clipboard.writeText(jsonString)
       .then(() => {
-        console.log('Configuration copied to clipboard')
+        console.log(`${type} copied to clipboard`)
       })
       .catch(err => {
         console.error('Failed to copy:', err)
@@ -154,34 +275,91 @@ function App() {
           >
             Revert
           </Button>
-          <Button
-            startIcon={<SaveIcon />}
-            onClick={handleSave}
-            variant="contained"
-            size="small"
-            color="primary"
-          >
-            Save
-          </Button>
+          {currentCategory === 'Secrets' && secretsChanged ? (
+            <Button
+              startIcon={<LockIcon />}
+              onClick={handleSaveSecrets}
+              variant="contained"
+              size="small"
+              color="warning"
+            >
+              Save Secrets
+            </Button>
+          ) : (
+            <Button
+              startIcon={<SaveIcon />}
+              onClick={handleSaveConfig}
+              variant="contained"
+              size="small"
+              color="primary"
+            >
+              Save Configuration
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 
       {/* Form content */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
-        {uischema && schema && (
-          <JsonForms
-            schema={schema}
-            uischema={uischema}
-            data={data}
-            renderers={allRenderers}
-            cells={materialCells}
-            onChange={handleChange}
-            ajv={createAjv()}
-          />
-        )}
+        <SecretsContext.Provider value={{ secrets }}>
+          {uischema && schema && (
+            <>
+              <JsonForms
+                schema={schema}
+                uischema={uischema}
+                data={data}
+                renderers={allRenderers}
+                cells={materialCells}
+                onChange={(state) => {
+                  handleConfigChange(state)
+                  // Track category changes
+                  const activeTab = document.querySelector('.MuiTab-root.Mui-selected')
+                  if (activeTab) {
+                    const categoryLabel = activeTab.textContent || ''
+                    if (categoryLabel && currentCategory !== categoryLabel) {
+                      setCurrentCategory(categoryLabel)
+                    }
+                  }
+                }}
+                ajv={createAjv()}
+              />
+              {/* Render Secrets Editor when Secrets tab is active */}
+              {currentCategory === 'Secrets' && (
+                <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+                  <Alert 
+                    severity="info" 
+                    icon={<LockIcon />}
+                    sx={{ mb: 3 }}
+                  >
+                    <Typography variant="body2" fontWeight="medium">
+                      Secrets are stored separately in <code>secrets.json</code>
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Changes to secrets require saving before they can be used in configuration fields.
+                      Use the "Save Secrets" button above when you have made changes.
+                    </Typography>
+                  </Alert>
+                  <Paper sx={{ p: 3 }}>
+                    <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LockIcon color="warning" />
+                      Secrets Management
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                      Manage secret values referenced in your configuration using !secret key_name.
+                    </Typography>
+                    <SecretsEditor 
+                      secrets={secrets}
+                      onChange={handleSecretsChange}
+                    />
+                  </Paper>
+                </Container>
+              )}
+            </>
+          )}
+        </SecretsContext.Provider>
       </Box>
 
-      {/* Save dialog */}
+      {/* Save dialog with tabs for both JSONs */}
       <Dialog 
         open={showSaveDialog} 
         onClose={handleCloseSaveDialog}
@@ -189,7 +367,7 @@ function App() {
         fullWidth
       >
         <DialogTitle>
-          Configuration JSON
+          Save Configuration
           <IconButton
             aria-label="close"
             onClick={handleCloseSaveDialog}
@@ -203,22 +381,30 @@ function App() {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
+          <Tabs value={saveDialogType} onChange={(_, newValue) => setSaveDialogType(newValue)}>
+            <Tab label="Configuration (options.json)" value="config" />
+            <Tab label="Secrets (secrets.json)" value="secrets" icon={<LockIcon />} iconPosition="end" />
+          </Tabs>
           <Paper 
             sx={{ 
+              mt: 2,
               p: 2, 
               bgcolor: 'grey.100',
-              maxHeight: '60vh',
+              maxHeight: '50vh',
               overflow: 'auto'
             }}
           >
             <pre style={{ margin: 0, fontSize: '0.875rem', fontFamily: 'monospace' }}>
-              {JSON.stringify(data, null, 2)}
+              {JSON.stringify(saveDialogType === 'config' ? data : secrets, null, 2)}
             </pre>
           </Paper>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCopyToClipboard} variant="outlined">
+          <Button onClick={() => handleCopyToClipboard(saveDialogType)} variant="outlined">
             Copy to Clipboard
+          </Button>
+          <Button onClick={() => handleCopyToClipboard('both')} variant="outlined">
+            Copy Both
           </Button>
           <Button onClick={handleCloseSaveDialog} variant="contained">
             Close

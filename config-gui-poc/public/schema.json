@@ -1501,6 +1501,7 @@
           "title": "Hasstoken",
           "x-help": "Long-lived access token for HA API. Usually auto-provided when running as add-on. Create manually: Profile \u2192 Security \u2192 Long-Lived Access Tokens. Use !secret for security.",
           "x-ui-section": "Homeassistant",
+          "x-ui-widget": "secret-picker",
           "x-validation-hint": "Auto-provided as add-on, use !secret if manual"
         },
         "protocol_api": {
@@ -1522,7 +1523,7 @@
       "x-help": "# Home Assistant Connection\n\nConfigure connection to Home Assistant for API access.\n\n## Auto-Detection (Recommended)\n\nWhen running as Home Assistant add-on:\n- \u2705 IP address auto-detected\n- \u2705 Port auto-detected\n- \u2705 Access token auto-provided\n- \u2705 Protocol auto-detected\n\n**Leave all fields empty for automatic configuration.**\n\n## Manual Configuration\n\nOnly needed if:\n- Running outside Home Assistant\n- Auto-detection fails\n- Using custom HA setup\n\n### Long-Lived Access Token\n\n1. In Home Assistant: Profile \u2192 Security\n2. Scroll to \"Long-Lived Access Tokens\"\n3. Click \"Create Token\"\n4. Name it \"Day Ahead Optimizer\"\n5. Copy token immediately (shown once!)\n6. Store in secrets.json:\n   ```json\n   {\"ha_token\": \"your_token_here\"}\n   ```\n7. Reference in config:\n   ```json\n   \"token\": \"!secret ha_token\"\n   ```\n\n## Troubleshooting\n\n- **Connection refused**: Check IP/port\n- **Unauthorized**: Token invalid or expired\n- **SSL errors**: Check protocol setting\n- **Timeout**: Network connectivity issues\n\n## Tips\n\n- Prefer auto-detection when possible\n- Always use !secret for tokens\n- Test connection from dashboard\n- Check HA logs if issues persist\n",
       "x-icon": "home-assistant",
       "x-order": 20,
-      "x-ui-group": "Integration"
+      "x-ui-group": "HASS"
     },
     "MachineConfig": {
       "additionalProperties": true,
@@ -2444,6 +2445,7 @@
       "title": "Use Calc Baseload",
       "type": "boolean",
       "x-order": 101,
+      "x-ui-group": "DAO",
       "x-ui-section": "Baseload"
     },
     "baseload calc periode": {
@@ -2453,6 +2455,7 @@
       "title": "Baseload Calc Periode",
       "type": "integer",
       "x-order": 102,
+      "x-ui-group": "DAO",
       "x-ui-rules": {
         "condition": {
           "schema": {
@@ -2472,6 +2475,7 @@
       "title": "Baseload",
       "x-help": "Baseload power consumption in watts for each hour of the day (24 values). Leave empty to use calculated baseload.",
       "x-order": 103,
+      "x-ui-group": "DAO",
       "x-ui-rules": {
         "condition": {
           "schema": {
@@ -2513,6 +2517,7 @@
       "title": "Interval",
       "type": "string",
       "x-order": 1,
+      "x-ui-group": "DAO",
       "x-ui-section": "Optimization"
     },
     "strategy": {
@@ -2525,6 +2530,7 @@
       "title": "Strategy",
       "type": "string",
       "x-order": 2,
+      "x-ui-group": "DAO",
       "x-ui-section": "Optimization"
     },
     "notifications": {

@@ -831,7 +831,7 @@ def main():
     
     # Generate UISchema with Categorization (tabs)
     # Define fixed order for predefined tabs
-    FIXED_TAB_ORDER = ["General", "Energy", "Devices"]
+    FIXED_TAB_ORDER = ["DAO", "HASS"]
     
     categories = []
     
