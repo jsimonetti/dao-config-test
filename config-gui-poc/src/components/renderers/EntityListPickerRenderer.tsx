@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useContext, forwardRef } from 'react'
 import {
   ControlProps,
   rankWith,
@@ -12,14 +12,44 @@ import {
   Tooltip,
   Chip,
   Link,
+  Autocomplete,
+  CircularProgress,
+  Alert,
+  ListSubheader,
 } from '@mui/material'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import WarningIcon from '@mui/icons-material/Warning'
+import { HAContext, API_ENDPOINTS } from '../../App'
+import {
+  fetchHAEntities,
+  filterEntitiesByDomain,
+  groupEntitiesByDomain,
+  formatEntityLabel,
+  getCachedEntities,
+  type HAEntityOption,
+} from '../../services/homeassistant'
 
 /**
- * Placeholder renderer for x-ui-widget: "entity-list-picker"
- * TODO: Implement proper multi-select entity picker with chips
+ * Custom listbox component that shows entity count in header
+ */
+const ListboxComponent = forwardRef<HTMLUListElement, React.HTMLAttributes<HTMLElement> & { entityCount?: number; widgetFilter?: string }>(function ListboxComponent(props, ref) {
+  const { children, entityCount, widgetFilter, ...other } = props
+  return (
+    <ul {...other} ref={ref}>
+      {entityCount !== undefined && entityCount > 0 && (
+        <ListSubheader sx={{ lineHeight: '32px', fontWeight: 600, bgcolor: 'action.hover' }}>
+          {entityCount} {widgetFilter || 'available'} {entityCount === 1 ? 'entity' : 'entities'}
+        </ListSubheader>
+      )}
+      {children}
+    </ul>
+  )
+})
+
+/**
+ * Multi-entity picker renderer with live Home Assistant entity loading
+ * Supports multiple selection with chips display
  */
 const EntityListPickerRenderer: React.FC<ControlProps> = ({
   data,
@@ -32,6 +62,12 @@ const EntityListPickerRenderer: React.FC<ControlProps> = ({
   required,
   errors,
 }) => {
+  const { config: haConfig, secrets } = useContext(HAContext)
+  const [entities, setEntities] = useState<HAEntityOption[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
+  
   if (!visible) {
     return null
   }
@@ -39,19 +75,80 @@ const EntityListPickerRenderer: React.FC<ControlProps> = ({
   const help = uischema?.options?.help
   const unit = uischema?.options?.unit
   const validationHint = uischema?.options?.validationHint
+  const widgetFilter = uischema?.options?.widgetFilter // e.g., "sensor,input_number"
+  const unitFilter = unit // Use x-unit for filtering entities by unit_of_measurement
   const docsUrl = uischema?.options?.docsUrl
   
   const hasError = Boolean(errors && errors.length > 0)
   const errorMessage = hasError ? errors : undefined
 
-  // Handle array data
-  const arrayValue = Array.isArray(data) ? data.join(', ') : (data || '')
+  // Ensure data is an array
+  const selectedValues = Array.isArray(data) ? data : (data ? [data] : [])
 
-  const handleValueChange = (value: string) => {
-    // Split by comma and trim
-    const items = value.split(',').map(s => s.trim()).filter(s => s.length > 0)
-    handleChange(path, items.length > 0 ? items : [])
+  /**
+   * Load entities from Home Assistant
+   */
+  const loadEntities = async (forceRefresh = false) => {
+    // Check cache first
+    if (!forceRefresh) {
+      const cached = getCachedEntities()
+      if (cached) {
+        const filtered = filterEntitiesByDomain(cached, widgetFilter, unitFilter)
+        setEntities(filtered)
+        return
+      }
+    }
+    
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const allEntities = await fetchHAEntities(API_ENDPOINTS.HA_STATES, haConfig, secrets)
+      const filtered = filterEntitiesByDomain(allEntities, widgetFilter, unitFilter)
+      setEntities(filtered)
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load entities'
+      setError(errorMsg)
+      console.error('Failed to fetch HA entities:', err)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  /**
+   * Handle autocomplete open - load entities on demand
+   */
+  const handleOpen = () => {
+    setOpen(true)
+    if (entities.length === 0 && !error) {
+      loadEntities()
+    }
+  }
+
+  /**
+   * Handle autocomplete close
+   */
+  const handleClose = () => {
+    setOpen(false)
+  }
+
+  /**
+   * Handle refresh button click
+   */
+  const handleRefresh = () => {
+    loadEntities(true)
+  }
+
+  // Group entities by domain for organized display
+  const groupedEntities = entities.length > 0 ? groupEntitiesByDomain(entities) : {}
+  const sortedDomains = Object.keys(groupedEntities).sort()
+
+  // Flatten for autocomplete options with group info
+  const options: (HAEntityOption | { header: string })[] = []
+  sortedDomains.forEach(domain => {
+    options.push({ header: domain })
+    options.push(...groupedEntities[domain])
+  })
 
   return (
     <Box sx={{ mb: 2 }}>
@@ -82,14 +179,8 @@ const EntityListPickerRenderer: React.FC<ControlProps> = ({
             </IconButton>
           </Tooltip>
         )}
-        <Chip
-          icon={<WarningIcon />}
-          label="TODO: Multi-Entity Picker"
-          size="small"
-          color="warning"
-          sx={{ ml: 1 }}
-        />
       </Box>
+      
       {(description || hasError || validationHint) && (
         <Typography variant="body2" sx={{ mb: 1 }}>
           {description && <span style={{ color: 'text.secondary' }}>{description}</span>}
@@ -99,20 +190,121 @@ const EntityListPickerRenderer: React.FC<ControlProps> = ({
         </Typography>
       )}
       
-      <TextField
-        type="text"
-        value={arrayValue}
-        onChange={(e) => handleValueChange(e.target.value)}
-        fullWidth
-        size="small"
-        placeholder="Enter entity IDs, comma-separated (e.g., sensor.solar1, sensor.solar2)"
-        error={hasError}
-        multiline
-        rows={2}
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            backgroundColor: '#d1ecf1', // Blue background
+      {error && (
+        <Alert severity="warning" sx={{ mb: 1 }}>
+          {error}
+          <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+            You can still enter entity IDs manually.
+          </Typography>
+        </Alert>
+      )}
+      
+      <Autocomplete
+        multiple
+        open={open}
+        onOpen={handleOpen}
+        onClose={handleClose}
+        value={selectedValues}
+        onChange={(_, newValue) => {
+          // Filter out header objects and extract entity IDs
+          const entityIds = newValue
+            .filter(item => typeof item === 'string' || 'entity_id' in item)
+            .map(item => typeof item === 'string' ? item : item.entity_id)
+          handleChange(path, entityIds.length > 0 ? entityIds : [])
+        }}
+        options={options}
+        getOptionLabel={(option) => {
+          if (typeof option === 'string') return option
+          if ('header' in option) return ''
+          return option.entity_id
+        }}
+        renderOption={(props, option) => {
+          if ('header' in option) {
+            return (
+              <ListSubheader key={option.header} sx={{ lineHeight: '32px' }}>
+                {option.header}
+              </ListSubheader>
+            )
           }
+          return (
+            <li {...props} key={option.entity_id}>
+              <Box>
+                <Typography variant="body2">{formatEntityLabel(option)}</Typography>
+              </Box>
+            </li>
+          )
+        }}
+        renderTags={(value, getTagProps) =>
+          value.map((option, index) => {
+            const entityId = typeof option === 'string' ? option : option.entity_id
+            return (
+              <Chip
+                label={entityId}
+                size="small"
+                {...getTagProps({ index })}
+                key={entityId}
+              />
+            )
+          })
+        }
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            placeholder={selectedValues.length === 0 ? (widgetFilter ? `Select ${widgetFilter} entities...` : 'Select entities...') : ''}
+            size="small"
+            error={hasError}
+            InputProps={{
+              ...params.InputProps,
+              endAdornment: (
+                <>
+                  {loading ? <CircularProgress color="inherit" size={20} /> : null}
+                  {entities.length > 0 && (
+                    <Tooltip title="Refresh entities" arrow>
+                      <IconButton
+                        size="small"
+                        onClick={handleRefresh}
+                        disabled={loading}
+                        edge="end"
+                        sx={{ mr: 0.5 }}
+                      >
+                        <RefreshIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {params.InputProps.endAdornment}
+                </>
+              ),
+            }}
+          />
+        )}
+        ListboxComponent={ListboxComponent}
+        slotProps={{
+          listbox: {
+            entityCount: entities.length,
+            widgetFilter: widgetFilter,
+          } as any,
+        }}
+        freeSolo
+        clearOnBlur={false}
+        selectOnFocus
+        handleHomeEndKeys
+        loading={loading}
+        filterOptions={(x) => x} // Let user type freely, we filter by domain already
+        isOptionEqualToValue={(option, value) => {
+          if (typeof option === 'string' && typeof value === 'string') {
+            return option === value
+          }
+          if ('entity_id' in option && typeof value === 'string') {
+            return option.entity_id === value
+          }
+          if ('entity_id' in option && 'entity_id' in value) {
+            return option.entity_id === value.entity_id
+          }
+          return false
+        }}
+        groupBy={(option) => {
+          if ('header' in option) return ''
+          return '' // We handle grouping manually with ListSubheader
         }}
       />
     </Box>
