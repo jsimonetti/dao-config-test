@@ -662,10 +662,10 @@ json_schema_extra={
 - [x] Entity caching and error handling
 - [x] Secrets management UI
 - [x] Visual polish and user experience refinements
+- [x] Entity list picker (multi-select with chips)
 
 ### Future Enhancements
 - [ ] Backend API proxy for Home Assistant integration
-- [ ] Entity list picker (multi-select with chips)
 - [ ] Configuration validation preview
 - [ ] Import/export configurations
 - [ ] Real-time entity state preview

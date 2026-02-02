@@ -1,0 +1,10 @@
+# Core dependencies
+pydantic>=2.0.0
+jsonschema>=4.0.0
+
+# Node.js virtual environment for frontend development
+nodeenv>=1.8.0
+
+# Optional: Database drivers (uncomment if using specific databases)
+# PyMySQL>=1.0.0  # For MySQL/MariaDB
+# psycopg2-binary>=2.9.0  # For PostgreSQL
