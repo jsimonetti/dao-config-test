@@ -2006,7 +2006,8 @@
       "x-ui-group": "DAO"
     },
     "SecretStr": {
-      "type": "string"
+      "type": "string",
+      "x-help": "Secret reference or plain string. Use \"!secret key_name\" format to reference secrets from secrets.json. Plain strings are also accepted."
     },
     "SolarConfig": {
       "additionalProperties": true,

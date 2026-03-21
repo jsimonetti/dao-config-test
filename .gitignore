@@ -47,3 +47,4 @@ lerna-debug.log*
 
 # Vite
 .vite
+./config-gui-poc/node_modules
