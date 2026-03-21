@@ -4,7 +4,7 @@ Battery configuration models.
 
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from ..base import FlexValue
+from ..base import EntityId, FlexInt
 from .solar import SolarConfig
 
 
@@ -51,13 +51,13 @@ class BatteryConfig(BaseModel):
             "x-ui-section": "Power Configuration"
         }
     )
-    entity_actual_level: str = Field(
+    entity_actual_level: EntityId = Field(
+        alias="entity actual level",
         description="HA entity for current battery SOC",
         json_schema_extra={
             "x-help": "Home Assistant entity that reports the current State of Charge (SOC) percentage. Usually a sensor from your battery inverter.",
             "x-unit": "%",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "sensor"
         }
     )
@@ -71,64 +71,71 @@ class BatteryConfig(BaseModel):
             "x-validation-hint": "Must be greater than 0"
         }
     )
-    upper_limit: int | FlexValue = Field(
-        ge=0, le=100,
+    upper_limit: FlexInt = Field(
+        default=100,
+        alias="upper limit",
         description="Maximum SOC % (can be HA entity)",
         json_schema_extra={
             "x-help": "Maximum State of Charge in percent. Battery will never charge above this level. Supports FlexValue pattern: use integer or HA entity ID.",
             "x-unit": "%",
             "x-ui-section": "Power Configuration",
-            "x-validation-hint": "0-100%, protects battery from overcharge",
-            "x-ui-widget": "entity-picker-or-number",
-            "x-ui-widget-filter": "sensor,input_number"
+            "x-validation-hint": "0-100%, protects battery from overcharge"
         }
     )
-    lower_limit: int | FlexValue = Field(
-        ge=0, le=100,
+    lower_limit: FlexInt = Field(
+        default=20,
+        alias="lower limit",
         description="Minimum SOC % (can be HA entity)",
         json_schema_extra={
             "x-help": "Minimum State of Charge in percent. Battery will never discharge below this level. Supports FlexValue pattern: use integer or HA entity ID.",
             "x-unit": "%",
             "x-ui-section": "Power Configuration",
-            "x-validation-hint": "0-100%, protects battery from deep discharge",
-            "x-ui-widget": "entity-picker-or-number",
-            "x-ui-widget-filter": "sensor,input_number"
+            "x-validation-hint": "0-100%, protects battery from deep discharge"
         }
     )
-    optimal_lower_level: Optional[int | FlexValue] = Field(
+    optimal_lower_level: Optional[FlexInt] = Field(
         default=None,
-        ge=0, le=100,
+        alias="optimal lower level",
         description="Optimal lower SOC % for cost optimization",
         json_schema_extra={
             "x-help": "Target SOC level for cost optimization. System will prefer this level over minimum. Supports FlexValue pattern.",
             "x-unit": "%",
             "x-ui-section": "Power Configuration",
-            "x-validation-hint": "Optional, should be >= lower_limit",
-            "x-ui-widget": "entity-picker-or-number",
-            "x-ui-widget-filter": "sensor,input_number"
+            "x-validation-hint": "Optional, should be >= lower_limit"
         }
     )
-    entity_min_soc_end_opt: Optional[str] = Field(
+    penalty_low_soc: float = Field(
+        default=0.0025,
+        alias="penalty low soc",
+        description="Penalty cost per % per hour below optimal lower SOC",
+        json_schema_extra={
+            "x-help": "Cost in euro per %·hour when SOC stays below optimal lower level. Higher values make the optimizer prioritize keeping SOC above the optimal level. Default 0.0025 euro/%·h.",
+            "x-unit": "euro/%·h",
+            "x-ui-section": "Power Configuration"
+        }
+    )
+    entity_min_soc_end_opt: Optional[EntityId] = Field(
         default=None,
+        alias="entity min soc end opt",
         description="HA entity for minimum SOC at end of optimization period",
         json_schema_extra={
             "x-help": "Optional: Home Assistant entity specifying minimum battery level required at end of optimization window. Useful for ensuring battery charge overnight.",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "sensor,input_number"
         }
     )
-    entity_max_soc_end_opt: Optional[str] = Field(
+    entity_max_soc_end_opt: Optional[EntityId] = Field(
         default=None,
+        alias="entity max soc end opt",
         description="HA entity for maximum SOC at end of optimization period",
         json_schema_extra={
             "x-help": "Optional: Home Assistant entity specifying maximum battery level at end of optimization window. Rarely needed but available for advanced scenarios.",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "sensor,input_number"
         }
     )
     charge_stages: list[BatteryStage] = Field(
+        alias="charge stages",
         min_length=1,
         description="Charge power/efficiency curve",
         json_schema_extra={
@@ -138,6 +145,7 @@ class BatteryConfig(BaseModel):
         }
     )
     discharge_stages: list[BatteryStage] = Field(
+        alias="discharge stages",
         min_length=1,
         description="Discharge power/efficiency curve",
         json_schema_extra={
@@ -150,6 +158,7 @@ class BatteryConfig(BaseModel):
     # Power reduction
     reduced_hours: Optional[dict[str, int]] = Field(
         default=None,
+        alias="reduced hours",
         description="Hour -> max power mapping for reduced power hours",
         json_schema_extra={
             "x-help": "Optional: Restrict battery power during specific hours. Example: {'22': 1000, '23': 1000} limits to 1000W from 22:00-23:59. Useful for noise reduction at night.",
@@ -157,7 +166,26 @@ class BatteryConfig(BaseModel):
             "x-validation-hint": "Keys are hour strings (0-23), values are watts"
         }
     )
+    reduce_power_low_soc: list = Field(
+        default_factory=list,
+        alias="reduce_power_low_soc",
+        description="SOC thresholds and power limits for low SOC power reduction",
+        json_schema_extra={
+            "x-help": "Optional: List of SOC/power pairs to reduce battery power at low state of charge. Protects battery by limiting power when nearly empty.",
+            "x-ui-section": "Power Configuration"
+        }
+    )
+    reduce_power_high_soc: list = Field(
+        default_factory=list,
+        alias="reduce_power_high_soc",
+        description="SOC thresholds and power limits for high SOC power reduction",
+        json_schema_extra={
+            "x-help": "Optional: List of SOC/power pairs to reduce battery power at high state of charge. Protects battery by limiting power when nearly full.",
+            "x-ui-section": "Power Configuration"
+        }
+    )
     minimum_power: int = Field(
+        alias="minimum power",
         ge=0,
         description="Minimum power in watts",
         json_schema_extra={
@@ -170,6 +198,7 @@ class BatteryConfig(BaseModel):
     
     # DC/Battery conversion
     dc_to_bat_efficiency: float = Field(
+        alias="dc_to_bat efficiency",
         ge=0, le=1,
         description="DC to battery efficiency",
         json_schema_extra={
@@ -179,8 +208,10 @@ class BatteryConfig(BaseModel):
             "x-validation-hint": "0.0-1.0, typically 0.95-0.98"
         }
     )
-    dc_to_bat_max_power: float = Field(
+    dc_to_bat_max_power: Optional[float] = Field(
+        default=None,
         gt=0,
+        alias="dc_to_bat max power",
         description="DC to battery max power in watts",
         json_schema_extra={
             "x-help": "Maximum power for DC-coupled solar charging in watts. Determines how much DC solar power can flow directly to battery.",
@@ -190,6 +221,7 @@ class BatteryConfig(BaseModel):
         }
     )
     bat_to_dc_efficiency: float = Field(
+        alias="bat_to_dc efficiency",
         ge=0, le=1,
         description="Battery to DC efficiency",
         json_schema_extra={
@@ -199,7 +231,8 @@ class BatteryConfig(BaseModel):
             "x-validation-hint": "0.0-1.0, typically 0.95-0.98"
         }
     )
-    bat_to_dc_max_power: float = Field(
+    bat_to_dc_max_power:  Optional[float] = Field(
+        default=None,
         gt=0,
         description="Battery to DC max power in watts",
         json_schema_extra={
@@ -212,6 +245,7 @@ class BatteryConfig(BaseModel):
     
     # Cost
     cycle_cost: float = Field(
+        alias="cycle cost",
         ge=0,
         description="Cost per battery cycle in euros",
         json_schema_extra={
@@ -223,28 +257,29 @@ class BatteryConfig(BaseModel):
     )
     
     # Control entities
-    entity_set_power_feedin: Optional[str] = Field(
+    entity_set_power_feedin: Optional[EntityId] = Field(
         default=None,
+        alias="entity set power feedin",
         description="HA entity to set power feed-in to grid",
         json_schema_extra={
             "x-help": "Optional: Home Assistant entity to control grid feed-in power. Used by scheduler to execute optimized battery operations.",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "number,input_number"
         }
     )
-    entity_set_operating_mode: Optional[str] = Field(
+    entity_set_operating_mode: Optional[EntityId] = Field(
         default=None,
+        alias="entity set operating mode",
         description="HA entity to set battery operating mode",
         json_schema_extra={
             "x-help": "Optional: Home Assistant entity to control battery operating mode (e.g., auto/manual/off). System will switch modes as needed for optimization.",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "select,input_select,switch"
         }
     )
     entity_set_operating_mode_on: Optional[str] = Field(
-        default=None,
+        default="Aan",
+        alias="entity set operating mode on",
         description="Value for operating mode ON",
         json_schema_extra={
             "x-help": "Value to send to operating mode entity for 'ON' state. Example: 'auto', 'enabled', 'on'. Must match actual entity values.",
@@ -252,89 +287,101 @@ class BatteryConfig(BaseModel):
         }
     )
     entity_set_operating_mode_off: Optional[str] = Field(
-        default=None,
+        default="Uit",
+        alias="entity set operating mode off",
         description="Value for operating mode OFF",
         json_schema_extra={
             "x-help": "Value to send to operating mode entity for 'OFF' state. Example: 'manual', 'disabled', 'off'. Must match actual entity values.",
             "x-ui-section": "Power Configuration"
         }
     )
-    entity_stop_inverter: Optional[str] = Field(
+    entity_stop_inverter: Optional[EntityId] = Field(
         default=None,
+        alias="entity stop inverter",
         description="HA entity to stop inverter",
         json_schema_extra={
             "x-help": "Optional: Home Assistant entity to emergency stop the battery inverter. Rarely needed but available for safety scenarios.",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "switch,button"
         }
     )
-    entity_balance_switch: Optional[str] = Field(
+    entity_stop_victron: Optional[EntityId] = Field(
         default=None,
+        alias="entity stop victron",
+        description="HA entity to stop Victron inverter",
+        json_schema_extra={
+            "x-help": "Optional: Home Assistant entity to stop a Victron battery inverter. Use this for Victron-specific stop control.",
+            "x-ui-section": "Power Configuration",
+            "x-ui-widget-filter": "switch,button"
+        }
+    )
+
+    entity_balance_switch: Optional[EntityId] = Field(
+        default=None,
+        alias="entity balance switch",
         description="HA entity for grid balancing switch",
         json_schema_extra={
             "x-help": "Optional: Home Assistant entity to enable/disable grid balancing mode. Used for frequency regulation participation or grid services.",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "switch"
         }
     )
     
     # Monitoring entities
-    entity_from_battery: Optional[str] = Field(
+    entity_from_battery: Optional[EntityId] = Field(
         default=None,
+        alias="entity from battery",
         description="HA entity for power from battery",
         json_schema_extra={
             "x-help": "Optional: Home Assistant sensor showing current power flow from battery in watts. Used for monitoring and validation.",
             "x-unit": "W",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "sensor"
         }
     )
-    entity_from_pv: Optional[str] = Field(
+    entity_from_pv: Optional[EntityId] = Field(
         default=None,
+        alias="entity from pv",
         description="HA entity for power from PV",
         json_schema_extra={
             "x-help": "Optional: Home Assistant sensor showing current DC-coupled solar power in watts. Only relevant for DC-coupled solar installations.",
             "x-unit": "W",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "sensor"
         }
     )
-    entity_from_ac: Optional[str] = Field(
+    entity_from_ac: Optional[EntityId] = Field(
         default=None,
+        alias="entity from ac",
         description="HA entity for power from AC",
         json_schema_extra={
             "x-help": "Optional: Home Assistant sensor showing current AC grid power flow in watts. Used for monitoring overall system balance.",
             "x-unit": "W",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "sensor"
         }
     )
-    entity_calculated_soc: Optional[str] = Field(
+    entity_calculated_soc: Optional[EntityId] = Field(
         default=None,
+        alias="entity calculated soc",
         description="HA entity for calculated SOC",
         json_schema_extra={
             "x-help": "Optional: Home Assistant sensor for calculated State of Charge. System can compute SOC from power flows if BMS sensor is unavailable.",
             "x-unit": "%",
             "x-ui-section": "Power Configuration",
-            "x-ui-widget": "entity-picker",
-            "x-ui-widget-filter": "sensor",
-            'x-order': 1
+            "x-order": 1,
+            "x-ui-widget-filter": "sensor"
         }
     )
     
     # DC-coupled solar (nested!)
-    solar: Optional[list[SolarConfig]] = Field(
-        default=None,
+    solar: list[SolarConfig] = Field(
+        default_factory=list,
         description="DC-coupled solar panels attached to this battery",
         json_schema_extra={
             "x-help": "Optional: Configure DC-coupled solar panels directly connected to this battery inverter. DC coupling is more efficient than AC coupling. Leave empty for AC-coupled or grid-only batteries.",
             "x-ui-section": "Battery Connected Solar",
-            'x-order': 1000
+            "x-order": 1000
         }
     )
     
@@ -367,12 +414,12 @@ Configure your home battery storage system for optimal energy management and cos
     @field_validator('charge_stages', 'discharge_stages', mode='after')
     @classmethod
     def validate_stages_sorted(cls, v: list[BatteryStage], info) -> list[BatteryStage]:
-        """Ensure stages are sorted by power."""
-        if len(v) < 2:
-            return v
-        
+        """Ensure stages are sorted by power and always start with a zero-power sentinel."""
         powers = [stage.power for stage in v]
         if powers != sorted(powers):
             raise ValueError(f"{info.field_name} must be sorted by power (ascending)")
-        
+
+        if v[0].power != 0.0:
+            v = [BatteryStage(power=0.0, efficiency=1.0)] + v
+
         return v

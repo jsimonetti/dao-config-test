@@ -10,8 +10,9 @@ from .base import SecretStr
 class HomeAssistantConfig(BaseModel):
     """Home Assistant connection configuration."""
     
-    ip_address: Optional[str] = Field(
-        default=None,
+    ip_address: str = Field(
+        default="supervisor",
+        alias="host",
         description="Home Assistant IP address (auto-detected if not set)",
         json_schema_extra={
             "x-help": "Home Assistant IP address or hostname. Usually auto-detected when running as HA add-on. Set manually only if auto-detection fails. Examples: '192.168.1.100', 'homeassistant.local'.",
@@ -20,6 +21,7 @@ class HomeAssistantConfig(BaseModel):
     )
     ip_port: Optional[int] = Field(
         default=None,
+        alias="ip port",
         description="Home Assistant port (default: 8123)",
         json_schema_extra={
             "x-help": "Home Assistant web interface port. Default is 8123. Change only if using custom port. Usually auto-detected when running as add-on.",
@@ -28,18 +30,19 @@ class HomeAssistantConfig(BaseModel):
             "x-validation-hint": "Default 8123, change if custom"
         }
     )
-    hasstoken: Optional[str | SecretStr] = Field(
+    hasstoken: Optional[SecretStr] = Field(
         default=None,
         description="Home Assistant long-lived access token (can use !secret)",
+        alias="token",
         json_schema_extra={
             "x-help": "Long-lived access token for HA API. Usually auto-provided when running as add-on. Create manually: Profile → Security → Long-Lived Access Tokens. Use !secret for security.",
             "x-ui-section": "Homeassistant",
-            "x-ui-widget": "secret-picker",
             "x-validation-hint": "Auto-provided as add-on, use !secret if manual"
         }
     )
-    protocol_api: Optional[Literal['http', 'https']] = Field(
-        default=None,
+    protocol_api: Literal['http', 'https'] = Field(
+        default="http",
+        alias="protocol api",
         description="API protocol",
         json_schema_extra={
             "x-help": "Protocol for Home Assistant API. 'http' for local access, 'https' for SSL/TLS. Usually auto-detected. Set manually only if needed.",

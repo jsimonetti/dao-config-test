@@ -25,6 +25,7 @@ class GridConfig(BaseModel):
         json_schema_extra={
             'x-ui-group': 'Energy',
             'x-icon': 'transmission-tower',
+            'x-order': 12,
             'x-help': '''# Grid Connection Configuration
 
 Define electrical grid connection limits to prevent overload.

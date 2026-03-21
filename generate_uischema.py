@@ -18,65 +18,6 @@ import subprocess
 QUIET = False
 
 
-def replace_flexvalue_refs(schema: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Replace FlexValue $ref objects with plain string type in anyOf arrays.
-    
-    FlexValue fields should accept either numbers or entity ID strings,
-    so we replace the FlexValue object reference with {type: string}.
-    Also moves validation constraints (minimum, maximum, etc.) into the 
-    integer/number option in the anyOf.
-    """
-    if isinstance(schema, dict):
-        # If this is an anyOf with a FlexValue reference, replace it
-        if "anyOf" in schema and isinstance(schema["anyOf"], list):
-            new_anyof = []
-            number_constraints = {}
-            
-            # Collect number validation constraints from root
-            for key in ["minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf"]:
-                if key in schema:
-                    number_constraints[key] = schema.pop(key)
-            
-            # Also check for Pydantic-style constraints
-            if "ge" in schema:
-                number_constraints["minimum"] = schema.pop("ge")
-            if "le" in schema:
-                number_constraints["maximum"] = schema.pop("le")
-            if "gt" in schema:
-                number_constraints["exclusiveMinimum"] = schema.pop("gt")
-            if "lt" in schema:
-                number_constraints["exclusiveMaximum"] = schema.pop("lt")
-            
-            for item in schema["anyOf"]:
-                if isinstance(item, dict) and "$ref" in item:
-                    # Check if it's a FlexValue reference
-                    if "FlexValue" in item["$ref"]:
-                        # Replace with string type
-                        new_anyof.append({"type": "string"})
-                    else:
-                        new_anyof.append(item)
-                elif isinstance(item, dict) and item.get("type") in ["integer", "number"]:
-                    # Convert integer to number for FlexValue compatibility
-                    # Add constraints to number type
-                    new_item = {**item, **number_constraints}
-                    new_item["type"] = "number"  # Always use number, not integer
-                    new_anyof.append(new_item)
-                else:
-                    new_anyof.append(item)
-            
-            schema["anyOf"] = new_anyof
-        
-        # Recursively process nested objects
-        for key, value in schema.items():
-            if isinstance(value, dict):
-                schema[key] = replace_flexvalue_refs(value)
-            elif isinstance(value, list):
-                schema[key] = [replace_flexvalue_refs(item) if isinstance(item, dict) else item for item in value]
-    
-    return schema
-
-
 def flatten_optional_anyof(schema: Dict[str, Any]) -> Dict[str, Any]:
     """
     Flatten Optional-style anyOf patterns to avoid JSONForms combinator rendering.
@@ -195,76 +136,71 @@ def extract_x_ui_group_from_property(prop_schema: Dict[str, Any], defs: Dict[str
     return group, order
 
 
-def validate_entity_picker_filters(schema: Dict[str, Any], defs: Dict[str, Any]) -> None:
+def validate_entity_id_filters(schema: Dict[str, Any], defs: Dict[str, Any]) -> None:
     """
-    Validate that all entity picker widgets have x-ui-widget-filter defined.
+    Validate that all EntityId fields have x-ui-widget-filter defined.
     
-    Only checks entity-picker and entity-list-picker. The entity-picker-or-X variants
-    don't need filters since the X type (number, boolean) already infers the HA type.
+    Detects EntityId fields by checking $ref to #/$defs/EntityId.
+    This is cleaner than checking x-ui-widget values.
     
-    Raises ValueError if any entity picker widget is missing the filter property.
-    This helps catch configuration errors at build time.
+    Raises ValueError if any EntityId field is missing the filter property.
     """
-    entity_picker_widgets = {
-        "entity-picker",
-        "entity-list-picker"
-    }
-    
     violations = []
     
     def check_property(prop_name: str, prop_schema: Dict[str, Any], path: str = "") -> None:
         """Recursively check a property and its nested properties."""
         full_path = f"{path}.{prop_name}" if path else prop_name
         
-        # Check direct widget property
-        widget = prop_schema.get("x-ui-widget")
-        if widget in entity_picker_widgets:
-            if "x-ui-widget-filter" not in prop_schema:
-                violations.append(f"{full_path} (widget: {widget})")
-        
-        # Check in resolved $ref
+        # Check if $ref points to EntityId
         if "$ref" in prop_schema:
-            resolved = resolve_ref(prop_schema["$ref"], defs)
-            widget = resolved.get("x-ui-widget")
-            if widget in entity_picker_widgets:
-                if "x-ui-widget-filter" not in resolved:
-                    violations.append(f"{full_path} -> {prop_schema['$ref']} (widget: {widget})")
+            ref = prop_schema["$ref"]
+            if ref.endswith("/EntityId"):
+                # Single EntityId field
+                if "x-ui-widget-filter" not in prop_schema:
+                    violations.append(f"{full_path} (EntityId)")
             
             # Recursively check nested properties in resolved definition
+            resolved = resolve_ref(ref, defs)
             if "properties" in resolved:
                 for nested_name, nested_schema in resolved["properties"].items():
                     check_property(nested_name, nested_schema, full_path)
         
-        # Check in anyOf options
+        # Check array items for list[EntityId]
+        if prop_schema.get("type") == "array" and "items" in prop_schema:
+            items = prop_schema["items"]
+            if "$ref" in items:
+                ref = items["$ref"]
+                if ref.endswith("/EntityId"):
+                    # List of EntityId fields
+                    if "x-ui-widget-filter" not in prop_schema:
+                        violations.append(f"{full_path}[] (list[EntityId])")
+                
+                # Recursively check nested properties in array item definition
+                resolved = resolve_ref(ref, defs)
+                if "properties" in resolved:
+                    for nested_name, nested_schema in resolved["properties"].items():
+                        check_property(nested_name, nested_schema, f"{full_path}[]")
+        
+        # Check in anyOf options (for Optional[EntityId])
         if "anyOf" in prop_schema:
             for option in prop_schema["anyOf"]:
                 if isinstance(option, dict) and option.get("type") != "null":
                     if "$ref" in option:
-                        resolved = resolve_ref(option["$ref"], defs)
-                        widget = resolved.get("x-ui-widget")
-                        if widget in entity_picker_widgets:
-                            if "x-ui-widget-filter" not in resolved:
-                                violations.append(f"{full_path} -> {option['$ref']} (widget: {widget})")
+                        ref = option["$ref"]
+                        if ref.endswith("/EntityId"):
+                            if "x-ui-widget-filter" not in prop_schema:
+                                violations.append(f"{full_path} (Optional[EntityId])")
                         
                         # Recursively check nested properties
+                        resolved = resolve_ref(ref, defs)
                         if "properties" in resolved:
                             for nested_name, nested_schema in resolved["properties"].items():
                                 check_property(nested_name, nested_schema, full_path)
         
-        # Check in array items
-        if prop_schema.get("type") == "array" and "items" in prop_schema:
-            items = prop_schema["items"]
-            if "$ref" in items:
-                resolved = resolve_ref(items["$ref"], defs)
-                widget = resolved.get("x-ui-widget")
-                if widget in entity_picker_widgets:
-                    if "x-ui-widget-filter" not in resolved:
-                        violations.append(f"{full_path}[] -> {items['$ref']} (widget: {widget})")
-                
-                # Recursively check nested properties in array item definition
-                if "properties" in resolved:
-                    for nested_name, nested_schema in resolved["properties"].items():
-                        check_property(nested_name, nested_schema, f"{full_path}[]")
+        # Recursively check properties in inline objects
+        if "properties" in prop_schema:
+            for nested_name, nested_schema in prop_schema["properties"].items():
+                check_property(nested_name, nested_schema, full_path)
     
     # Check all root properties
     properties = schema.get("properties", {})
@@ -273,9 +209,9 @@ def validate_entity_picker_filters(schema: Dict[str, Any], defs: Dict[str, Any])
     
     if violations:
         error_msg = (
-            "❌ Entity picker widgets missing x-ui-widget-filter:\n" +
+            "❌ EntityId fields missing x-ui-widget-filter:\n" +
             "\n".join(f"  - {v}" for v in violations) +
-            "\n\nAll entity picker widgets must have x-ui-widget-filter defined."
+            "\n\nAll EntityId fields must have x-ui-widget-filter defined for domain filtering."
         )
         raise ValueError(error_msg)
 
@@ -311,6 +247,12 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
         options["widgetFilter"] = prop_schema["x-ui-widget-filter"]
     if "x-docs-url" in prop_schema:
         options["docsUrl"] = prop_schema["x-docs-url"]
+    
+    # Preserve $ref type information for renderer detection
+    # This survives $ref resolution and allows testers to identify custom types
+    if "$ref" in prop_schema:
+        ref_type = prop_schema["$ref"].split("/")[-1]  # Extract type name from $ref path
+        options["refType"] = ref_type  # e.g., "EntityId", "FlexInt", "SecretStr"
     
     # Add source location for debugging
     if source_class:
@@ -351,6 +293,10 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
     # For arrays, check items definition for metadata AND generate detail UISchema
     if prop_schema.get("type") == "array":
         if "items" in prop_schema and "$ref" in prop_schema["items"]:
+            # Preserve array item $ref type for renderer detection
+            items_ref_type = prop_schema["items"]["$ref"].split("/")[-1]
+            options["itemsRefType"] = items_ref_type  # e.g., "EntityId" for list[EntityId]
+            
             resolved = resolve_ref(prop_schema["items"]["$ref"], defs)
             # Extract all relevant metadata from the array item model
             if "x-help" in resolved and "help" not in options:
@@ -756,9 +702,6 @@ def main():
     # Generate JSON Schema from root model
     schema = ConfigurationV0.model_json_schema(mode='serialization')
     
-    # Replace FlexValue references with string type
-    schema = replace_flexvalue_refs(schema)
-    
     # Flatten Optional-style anyOf to prevent ANYOF tabs in JSONForms
     schema = flatten_optional_anyof(schema)
     
@@ -770,12 +713,12 @@ def main():
         print(f"Found {len(properties)} root properties")
         print(f"Found {len(defs)} definitions")
     
-    # Validate entity picker widgets have filters defined
+    # Validate EntityId fields have filters defined
     if not QUIET:
-        print("\nValidating entity picker widgets...")
-    validate_entity_picker_filters(schema, defs)
+        print("\nValidating EntityId fields...")
+    validate_entity_id_filters(schema, defs)
     if not QUIET:
-        print("✅ All entity picker widgets have filters")
+        print("✅ All EntityId fields have filters")
     
     # Group properties by x-ui-group
     # Structure: {group_name: [(order, prop_name, prop_schema, source_class, parent_prop_name, parent_section)]}

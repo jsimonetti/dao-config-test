@@ -5,14 +5,13 @@ Database configuration models.
 from typing import Optional, Literal
 from pydantic import BaseModel, Field, model_validator, ConfigDict
 from .base import SecretStr
-import jsonschema
 
 
 class HADatabaseConfig(BaseModel):
     """Home Assistant database connection configuration."""
     
     engine: Literal["mysql", "sqlite", "postgresql"] = Field(
-        default="mysql",
+        default="sqlite",
         description="Database engine type",
         json_schema_extra={
             "x-help": "Database engine where Home Assistant stores history data. Most HA installations use SQLite, but MySQL/MariaDB and PostgreSQL are also supported.",
@@ -53,16 +52,31 @@ class HADatabaseConfig(BaseModel):
             }
         }
     )
-    database: str = Field(
-        default="homeassistant",
+    db_path: Optional[str] = Field(
+        default=None,
+        description="Database path for SQLite",
+        json_schema_extra={
+            "x-help": "Directory path for SQLite database file.",
+            "x-ui-section": "Homeassistant DB",
+            "x-ui-rules": {
+                "effect": "HIDE",
+                "condition": {
+                    "scope": "#/properties/engine",
+                    "schema": {"enum": ["mysql", "postgresql"]}
+                }
+            }
+        }
+    )
+    database: Optional[str] = Field(
+        default=None,
         description="Database name",
         json_schema_extra={
             "x-help": "Name of the Home Assistant database. Default 'homeassistant' matches standard HA installation.",
             "x-ui-section": "Homeassistant DB"
         }
     )
-    username: str = Field(
-        default="homeassistant",
+    username: Optional[str] = Field(
+        default=None,
         description="Database username",
         json_schema_extra={
             "x-help": "Username for database authentication. Default 'homeassistant' matches standard HA installation.",
@@ -76,7 +90,7 @@ class HADatabaseConfig(BaseModel):
             }
         }
     )
-    password: Optional[str | SecretStr] = Field(
+    password: Optional[SecretStr] = Field(
         default=None,
         description="Database password (can use !secret)",
         json_schema_extra={
@@ -100,7 +114,6 @@ class HADatabaseConfig(BaseModel):
             "x-help": "Home Assistant database connection for reading historical sensor data (prices, solar, baseload).",
             "x-ui-group": "Integration",
             "title": "Home Assistant Database",
-            # Conditional validation: require server, port, username when engine is mysql/postgresql
             "if": {
                 "required": ["engine"],
                 "properties": {
@@ -114,29 +127,30 @@ class HADatabaseConfig(BaseModel):
     )
     
     @model_validator(mode='after')
-    def validate_conditional_requirements(self) -> 'HADatabaseConfig':
-        """
-        Generic validator that enforces JSON Schema conditionals.
-        
-        Uses jsonschema library to validate the model instance against
-        its own JSON Schema (including if/then/else conditionals).
-        This keeps validation logic in sync with the schema.
-        """
-        # Set default port if not provided (before validation)
-        if self.engine in ('mysql', 'postgresql') and self.port is None:
-            self.port = 3306 if self.engine == 'mysql' else 5432
-        
-        schema = self.model_json_schema()
-        # Exclude None values so jsonschema treats them as missing (not present)
-        instance = self.model_dump(exclude_none=True)
-        
-        try:
-            jsonschema.validate(instance=instance, schema=schema)
-        except jsonschema.ValidationError as e:
-            # Extract relevant error info
-            field_path = '.'.join(str(p) for p in e.path) if e.path else 'root'
-            raise ValueError(f"Validation failed at {field_path}: {e.message}")
-        
+    def validate_engine_requirements(self) -> 'HADatabaseConfig':
+        """Validate engine-specific requirements and set defaults."""
+        if self.engine in ('mysql', 'postgresql'):
+            if self.server is None:
+                if self.engine == 'mysql':
+                    self.server = 'core-mariadb'
+                else:
+                    raise ValueError(f"'server' is required when engine is '{self.engine}'")
+            if self.username is None:
+                if self.engine == 'mysql':
+                    self.username = 'homeassistant'
+                else:
+                    raise ValueError(f"'username' is required when engine is '{self.engine}'")
+            if self.password is None:
+                raise ValueError(f"'password' is required when engine is '{self.engine}'")
+            if self.port is None:
+                self.port = 3306 if self.engine == 'mysql' else 5432
+        elif self.engine == 'sqlite':
+            if self.db_path is None:
+                self.db_path = "/homeassistant"
+
+        if self.database is None:
+            self.database = "home-assistant_v2.db" if self.engine == "sqlite" else "homeassistant"
+
         return self
 
 
@@ -233,7 +247,7 @@ class DatabaseConfig(BaseModel):
             }
         }
     )
-    password: Optional[str | SecretStr] = Field(
+    password: Optional[SecretStr] = Field(
         default=None,
         description="MySQL password (can use !secret)",
         json_schema_extra={
@@ -317,16 +331,28 @@ Then in options.json:
     
     @model_validator(mode='after')
     def validate_engine_requirements(self) -> 'DatabaseConfig':
-        """Validate engine-specific requirements."""
+        """Validate engine-specific requirements and set defaults."""
         if self.engine in ('mysql', 'postgresql'):
-            if not self.server:
-                raise ValueError(f"'server' is required when engine is '{self.engine}'")
-            if not self.port:
-                raise ValueError(f"'port' is required when engine is '{self.engine}'")
-            if not self.username:
-                raise ValueError(f"'username' is required when engine is '{self.engine}'")
+            if self.server is None:
+                if self.engine == 'mysql':
+                    self.server = 'core-mariadb'
+                else:
+                    raise ValueError(f"'server' is required when engine is '{self.engine}'")
+            if self.username is None:
+                if self.engine == 'mysql':
+                    self.username = 'day_ahead'
+                else:  
+                    raise ValueError(f"'username' is required when engine is '{self.engine}'")
+            if self.password is None:
+                raise ValueError(f"'password' is required when engine is '{self.engine}'")
+            if self.port is None:
+                self.port = 3306 if self.engine == 'mysql' else 5432
+
         elif self.engine == 'sqlite':
-            if not self.db_path and not self.database:
-                raise ValueError("Either 'db_path' or 'database' is required for sqlite")
-        
+            if self.db_path is None and self.database is None:
+                self.db_path = "../data"
+
+        if self.database is None:
+            self.database = "day_ahead.db" if self.engine == "sqlite" else "day_ahead"
+
         return self

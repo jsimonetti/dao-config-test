@@ -22,7 +22,10 @@
               "type": "Control",
               "scope": "#/properties/strategy",
               "options": {
-                "description": "Optimization strategy"
+                "description": "Optimization strategy (or HA entity ID returning the strategy string)",
+                "refType": "FlexStr",
+                "x-source": "FlexStr.strategy",
+                "help": "FlexValue enables dynamic configuration using Home Assistant entities. Instead of hardcoding values, reference HA entities that can change at runtime. System automatically detects and resolves entity IDs."
               }
             }
           ]
@@ -83,7 +86,7 @@
             {
               "type": "HelpButton",
               "options": {
-                "helpText": "Baseload power consumption in watts for each hour of the day (24 values). Leave empty to use calculated baseload.",
+                "helpText": "Baseload power consumption in kWh for each hour of the day (24 values). Leave empty to use calculated baseload.",
                 "helpTitle": "Help"
               }
             },
@@ -91,7 +94,7 @@
               "type": "Control",
               "scope": "#/properties/baseload",
               "options": {
-                "description": "Baseload power consumption (watts) - 24 hourly values"
+                "description": "Baseload power consumption (kWh) - 24 hourly values"
               },
               "rule": {
                 "condition": {
@@ -130,7 +133,7 @@
               "options": {
                 "help": "Meteoserver API access key. Get from Meteoserver.nl account. Use !secret for security. Required for weather forecasts.",
                 "description": "Meteoserver API key (can use !secret)",
-                "widget": "secret-picker",
+                "refType": "SecretStr",
                 "x-source": "SecretStr.meteoserver-key"
               }
             },
@@ -154,20 +157,6 @@
           "type": "Group",
           "label": "Your home",
           "elements": [
-            {
-              "type": "Control",
-              "scope": "#/properties/latitude",
-              "options": {
-                "description": "Latitude (auto-fetched from HA if not set)"
-              }
-            },
-            {
-              "type": "Control",
-              "scope": "#/properties/longitude",
-              "options": {
-                "description": "Longitude (auto-fetched from HA if not set)"
-              }
-            },
             {
               "type": "Control",
               "scope": "#/properties/time_zone",
@@ -196,42 +185,41 @@
           "elements": [
             {
               "type": "Control",
-              "scope": "#/properties/homeassistant/properties/ip_address",
+              "scope": "#/properties/homeassistant/properties/host",
               "options": {
                 "help": "Home Assistant IP address or hostname. Usually auto-detected when running as HA add-on. Set manually only if auto-detection fails. Examples: '192.168.1.100', 'homeassistant.local'.",
                 "description": "Home Assistant IP address (auto-detected if not set)",
-                "x-source": "HomeAssistantConfig.ip_address"
+                "x-source": "HomeAssistantConfig.host"
               }
             },
             {
               "type": "Control",
-              "scope": "#/properties/homeassistant/properties/ip_port",
+              "scope": "#/properties/homeassistant/properties/ip port",
               "options": {
                 "help": "Home Assistant web interface port. Default is 8123. Change only if using custom port. Usually auto-detected when running as add-on.",
                 "description": "Home Assistant port (default: 8123)",
                 "unit": "port",
                 "validationHint": "Default 8123, change if custom",
-                "x-source": "HomeAssistantConfig.ip_port"
+                "x-source": "HomeAssistantConfig.ip port"
               }
             },
             {
               "type": "Control",
-              "scope": "#/properties/homeassistant/properties/hasstoken",
+              "scope": "#/properties/homeassistant/properties/token",
               "options": {
                 "help": "Long-lived access token for HA API. Usually auto-provided when running as add-on. Create manually: Profile \u2192 Security \u2192 Long-Lived Access Tokens. Use !secret for security.",
                 "description": "Home Assistant long-lived access token (can use !secret)",
-                "widget": "secret-picker",
                 "validationHint": "Auto-provided as add-on, use !secret if manual",
-                "x-source": "HomeAssistantConfig.hasstoken"
+                "x-source": "HomeAssistantConfig.token"
               }
             },
             {
               "type": "Control",
-              "scope": "#/properties/homeassistant/properties/protocol_api",
+              "scope": "#/properties/homeassistant/properties/protocol api",
               "options": {
                 "help": "Protocol for Home Assistant API. 'http' for local access, 'https' for SSL/TLS. Usually auto-detected. Set manually only if needed.",
                 "description": "API protocol",
-                "x-source": "HomeAssistantConfig.protocol_api"
+                "x-source": "HomeAssistantConfig.protocol api"
               }
             }
           ]
@@ -259,6 +247,7 @@
               "scope": "#/properties/electric vehicle",
               "options": {
                 "description": "Electric vehicle configurations",
+                "itemsRefType": "EVConfig",
                 "title": "EVConfig",
                 "docsUrl": "https://github.com/corneel27/day-ahead/wiki/EV-Configuration",
                 "detail": {
@@ -290,7 +279,6 @@
                       "options": {
                         "help": "Home Assistant device tracker entity to detect if vehicle is home. Charging is only scheduled when vehicle is at home location.",
                         "description": "HA device tracker for vehicle position",
-                        "widget": "entity-picker",
                         "widgetFilter": "device_tracker",
                         "x-source": "EVConfig.entity position"
                       }
@@ -301,7 +289,6 @@
                       "options": {
                         "help": "True for three-phase charging (11kW/22kW), False for single-phase (3.7kW/7.4kW). Can also be HA entity ID for dynamic resolution.",
                         "description": "Whether vehicle charges on three phases",
-                        "widget": "entity-picker-or-boolean",
                         "x-source": "EVConfig.charge three phase"
                       }
                     },
@@ -322,7 +309,6 @@
                         "help": "Home Assistant sensor showing current battery State of Charge in percent. Required for charge optimization.",
                         "description": "HA entity for current battery level %",
                         "unit": "%",
-                        "widget": "entity-picker",
                         "widgetFilter": "sensor",
                         "x-source": "EVConfig.entity actual level"
                       }
@@ -333,7 +319,6 @@
                       "options": {
                         "help": "Home Assistant binary sensor indicating if vehicle is plugged into charger. Charging is only possible when plugged in.",
                         "description": "HA binary sensor for plugged in status",
-                        "widget": "entity-picker",
                         "widgetFilter": "binary_sensor",
                         "x-source": "EVConfig.entity plugged in"
                       }
@@ -344,7 +329,6 @@
                       "options": {
                         "help": "Optional: Home Assistant entity to trigger immediate charging. Use with entity_instant_level for instant charging mode. Alternative to charge_scheduler.",
                         "description": "HA entity for instant start charging",
-                        "widget": "entity-picker",
                         "widgetFilter": "switch,input_boolean",
                         "x-source": "EVConfig.entity instant start"
                       }
@@ -356,7 +340,6 @@
                         "help": "Optional: Home Assistant entity for instant charge target level. When instant_start triggers, system charges to this level immediately. Alternative to charge_scheduler.",
                         "description": "HA entity for instant charge level target",
                         "unit": "%",
-                        "widget": "entity-picker",
                         "widgetFilter": "input_number,number,sensor",
                         "x-source": "EVConfig.entity instant level"
                       }
@@ -376,7 +359,6 @@
                       "options": {
                         "help": "Home Assistant switch entity to start/stop charging. System will control this to execute optimized charging schedule.",
                         "description": "HA switch entity to control charging",
-                        "widget": "entity-picker",
                         "widgetFilter": "switch",
                         "x-source": "EVConfig.charge switch"
                       }
@@ -388,7 +370,6 @@
                         "help": "Home Assistant entity to control charging current in amperes. System will adjust this to optimize charging speed and cost.",
                         "description": "HA entity to set charging amperage",
                         "unit": "A",
-                        "widget": "entity-picker",
                         "widgetFilter": "number,input_number",
                         "x-source": "EVConfig.entity set charging ampere"
                       }
@@ -399,7 +380,6 @@
                       "options": {
                         "help": "Home Assistant datetime entity specifying when to stop charging. Provides manual override of optimized schedule.",
                         "description": "HA entity for stop charging datetime",
-                        "widget": "entity-picker",
                         "widgetFilter": "input_datetime,datetime",
                         "x-source": "EVConfig.entity stop charging"
                       }
@@ -427,6 +407,7 @@
               "scope": "#/properties/machines",
               "options": {
                 "description": "Appliance/machine configurations",
+                "itemsRefType": "MachineConfig",
                 "title": "MachineConfig",
                 "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Machine-Configuration",
                 "detail": {
@@ -469,7 +450,6 @@
                           "options": {
                             "help": "Home Assistant datetime entity for earliest allowed start time. Machine can start any time after this. Example: 'Now' or '18:00 today'.",
                             "description": "HA entity for start window datetime",
-                            "widget": "entity-picker",
                             "widgetFilter": "input_datetime,datetime",
                             "x-source": "MachineConfig.entity start window"
                           }
@@ -480,7 +460,6 @@
                           "options": {
                             "help": "Home Assistant datetime entity for latest allowed completion time. Machine must finish before this deadline. Example: '08:00 tomorrow'.",
                             "description": "HA entity for end window datetime",
-                            "widget": "entity-picker",
                             "widgetFilter": "input_datetime,datetime",
                             "x-source": "MachineConfig.entity end window"
                           }
@@ -491,7 +470,6 @@
                           "options": {
                             "help": "Home Assistant entity to select which program to run. Must match program names defined in 'programs' list.",
                             "description": "HA entity for selected program",
-                            "widget": "entity-picker",
                             "widgetFilter": "input_select,select",
                             "x-source": "MachineConfig.entity selected program"
                           }
@@ -502,7 +480,6 @@
                           "options": {
                             "help": "Home Assistant entity where system writes the calculated optimal start time. User/automation can use this to trigger machine.",
                             "description": "HA entity for calculated optimal start time",
-                            "widget": "entity-picker",
                             "widgetFilter": "input_datetime,datetime",
                             "x-source": "MachineConfig.entity calculated start"
                           }
@@ -513,7 +490,6 @@
                           "options": {
                             "help": "Home Assistant entity where system writes the calculated program end time. Useful for notifications and planning.",
                             "description": "HA entity for calculated end time",
-                            "widget": "entity-picker",
                             "widgetFilter": "input_datetime,datetime",
                             "x-source": "MachineConfig.entity calculated end"
                           }
@@ -524,7 +500,6 @@
                           "options": {
                             "help": "Optional: Home Assistant entity to force immediate start, bypassing optimization. Useful for urgent wash cycles.",
                             "description": "HA entity for instant start",
-                            "widget": "entity-picker",
                             "widgetFilter": "input_boolean,switch,button",
                             "x-source": "MachineConfig.entity instant start"
                           }
@@ -562,7 +537,8 @@
               "type": "Control",
               "scope": "#/properties/battery",
               "options": {
-                "description": "Battery configuration for optimization.",
+                "description": "Battery configurations",
+                "itemsRefType": "BatteryConfig",
                 "title": "BatteryConfig",
                 "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Battery-Configuration",
                 "detail": {
@@ -582,14 +558,13 @@
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_calculated_soc",
+                          "scope": "#/properties/entity calculated soc",
                           "options": {
                             "help": "Optional: Home Assistant sensor for calculated State of Charge. System can compute SOC from power flows if BMS sensor is unavailable.",
                             "description": "HA entity for calculated SOC",
                             "unit": "%",
-                            "widget": "entity-picker",
                             "widgetFilter": "sensor",
-                            "x-source": "BatteryConfig.entity_calculated_soc"
+                            "x-source": "BatteryConfig.entity calculated soc"
                           }
                         },
                         {
@@ -603,14 +578,13 @@
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_actual_level",
+                          "scope": "#/properties/entity actual level",
                           "options": {
                             "help": "Home Assistant entity that reports the current State of Charge (SOC) percentage. Usually a sensor from your battery inverter.",
                             "description": "HA entity for current battery SOC",
                             "unit": "%",
-                            "widget": "entity-picker",
                             "widgetFilter": "sensor",
-                            "x-source": "BatteryConfig.entity_actual_level"
+                            "x-source": "BatteryConfig.entity actual level"
                           }
                         },
                         {
@@ -626,137 +600,157 @@
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/upper_limit",
+                          "scope": "#/properties/upper limit",
                           "options": {
                             "help": "Maximum State of Charge in percent. Battery will never charge above this level. Supports FlexValue pattern: use integer or HA entity ID.",
                             "description": "Maximum SOC % (can be HA entity)",
                             "unit": "%",
-                            "widget": "entity-picker-or-number",
-                            "widgetFilter": "sensor,input_number",
                             "validationHint": "0-100%, protects battery from overcharge",
-                            "x-source": "BatteryConfig.upper_limit"
+                            "x-source": "BatteryConfig.upper limit"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/lower_limit",
+                          "scope": "#/properties/lower limit",
                           "options": {
                             "help": "Minimum State of Charge in percent. Battery will never discharge below this level. Supports FlexValue pattern: use integer or HA entity ID.",
                             "description": "Minimum SOC % (can be HA entity)",
                             "unit": "%",
-                            "widget": "entity-picker-or-number",
-                            "widgetFilter": "sensor,input_number",
                             "validationHint": "0-100%, protects battery from deep discharge",
-                            "x-source": "BatteryConfig.lower_limit"
+                            "x-source": "BatteryConfig.lower limit"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/optimal_lower_level",
+                          "scope": "#/properties/optimal lower level",
                           "options": {
                             "help": "Target SOC level for cost optimization. System will prefer this level over minimum. Supports FlexValue pattern.",
                             "description": "Optimal lower SOC % for cost optimization",
                             "unit": "%",
-                            "widget": "entity-picker-or-number",
-                            "widgetFilter": "sensor,input_number",
                             "validationHint": "Optional, should be >= lower_limit",
-                            "x-source": "BatteryConfig.optimal_lower_level"
+                            "x-source": "BatteryConfig.optimal lower level"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_min_soc_end_opt",
+                          "scope": "#/properties/penalty low soc",
+                          "options": {
+                            "help": "Cost in euro per %\u00b7hour when SOC stays below optimal lower level. Higher values make the optimizer prioritize keeping SOC above the optimal level. Default 0.0025 euro/%\u00b7h.",
+                            "description": "Penalty cost per % per hour below optimal lower SOC",
+                            "unit": "euro/%\u00b7h",
+                            "x-source": "BatteryConfig.penalty low soc"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity min soc end opt",
                           "options": {
                             "help": "Optional: Home Assistant entity specifying minimum battery level required at end of optimization window. Useful for ensuring battery charge overnight.",
                             "description": "HA entity for minimum SOC at end of optimization period",
-                            "widget": "entity-picker",
                             "widgetFilter": "sensor,input_number",
-                            "x-source": "BatteryConfig.entity_min_soc_end_opt"
+                            "x-source": "BatteryConfig.entity min soc end opt"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_max_soc_end_opt",
+                          "scope": "#/properties/entity max soc end opt",
                           "options": {
                             "help": "Optional: Home Assistant entity specifying maximum battery level at end of optimization window. Rarely needed but available for advanced scenarios.",
                             "description": "HA entity for maximum SOC at end of optimization period",
-                            "widget": "entity-picker",
                             "widgetFilter": "sensor,input_number",
-                            "x-source": "BatteryConfig.entity_max_soc_end_opt"
+                            "x-source": "BatteryConfig.entity max soc end opt"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/charge_stages",
+                          "scope": "#/properties/charge stages",
                           "options": {
                             "help": "Power stages for charging with corresponding efficiencies. Defines charge curve from AC grid to battery. At least one stage required.",
                             "description": "Charge power/efficiency curve",
                             "validationHint": "At least 1 stage required, ordered by power",
-                            "x-source": "BatteryConfig.charge_stages"
+                            "x-source": "BatteryConfig.charge stages"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/discharge_stages",
+                          "scope": "#/properties/discharge stages",
                           "options": {
                             "help": "Power stages for discharging with corresponding efficiencies. Defines discharge curve from battery to AC grid. At least one stage required.",
                             "description": "Discharge power/efficiency curve",
                             "validationHint": "At least 1 stage required, ordered by power",
-                            "x-source": "BatteryConfig.discharge_stages"
+                            "x-source": "BatteryConfig.discharge stages"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/reduced_hours",
+                          "scope": "#/properties/reduced hours",
                           "options": {
                             "help": "Optional: Restrict battery power during specific hours. Example: {'22': 1000, '23': 1000} limits to 1000W from 22:00-23:59. Useful for noise reduction at night.",
                             "description": "Hour -> max power mapping for reduced power hours",
                             "validationHint": "Keys are hour strings (0-23), values are watts",
-                            "x-source": "BatteryConfig.reduced_hours"
+                            "x-source": "BatteryConfig.reduced hours"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/minimum_power",
+                          "scope": "#/properties/reduce_power_low_soc",
+                          "options": {
+                            "help": "Optional: List of SOC/power pairs to reduce battery power at low state of charge. Protects battery by limiting power when nearly empty.",
+                            "description": "SOC thresholds and power limits for low SOC power reduction",
+                            "x-source": "BatteryConfig.reduce_power_low_soc"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/reduce_power_high_soc",
+                          "options": {
+                            "help": "Optional: List of SOC/power pairs to reduce battery power at high state of charge. Protects battery by limiting power when nearly full.",
+                            "description": "SOC thresholds and power limits for high SOC power reduction",
+                            "x-source": "BatteryConfig.reduce_power_high_soc"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/minimum power",
                           "options": {
                             "help": "Minimum power threshold in watts. Operations below this power level will be rounded to zero. Prevents inefficient micro-charging/discharging.",
                             "description": "Minimum power in watts",
                             "unit": "W",
                             "validationHint": "Must be >= 0, typically 50-200W",
-                            "x-source": "BatteryConfig.minimum_power"
+                            "x-source": "BatteryConfig.minimum power"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/dc_to_bat_efficiency",
+                          "scope": "#/properties/dc_to_bat efficiency",
                           "options": {
                             "help": "Efficiency of DC-coupled solar to battery conversion. Typically 0.95-0.98 for modern DC-coupled systems. Only relevant if DC-coupled solar is configured.",
                             "description": "DC to battery efficiency",
                             "unit": "ratio",
                             "validationHint": "0.0-1.0, typically 0.95-0.98",
-                            "x-source": "BatteryConfig.dc_to_bat_efficiency"
+                            "x-source": "BatteryConfig.dc_to_bat efficiency"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/dc_to_bat_max_power",
+                          "scope": "#/properties/dc_to_bat max power",
                           "options": {
                             "help": "Maximum power for DC-coupled solar charging in watts. Determines how much DC solar power can flow directly to battery.",
                             "description": "DC to battery max power in watts",
                             "unit": "W",
                             "validationHint": "Must be > 0",
-                            "x-source": "BatteryConfig.dc_to_bat_max_power"
+                            "x-source": "BatteryConfig.dc_to_bat max power"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/bat_to_dc_efficiency",
+                          "scope": "#/properties/bat_to_dc efficiency",
                           "options": {
                             "help": "Efficiency of battery to DC bus conversion. Typically 0.95-0.98. Only relevant for DC-coupled loads or reverse DC flow scenarios.",
                             "description": "Battery to DC efficiency",
                             "unit": "ratio",
                             "validationHint": "0.0-1.0, typically 0.95-0.98",
-                            "x-source": "BatteryConfig.bat_to_dc_efficiency"
+                            "x-source": "BatteryConfig.bat_to_dc efficiency"
                           }
                         },
                         {
@@ -772,111 +766,114 @@
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/cycle_cost",
+                          "scope": "#/properties/cycle cost",
                           "options": {
                             "help": "Degradation cost per full charge-discharge cycle in euros. Used to factor battery wear into optimization. Calculate as: (battery_cost / warranted_cycles). Example: \u20ac5000 battery with 6000 cycles = \u20ac0.83/cycle.",
                             "description": "Cost per battery cycle in euros",
                             "unit": "\u20ac",
                             "validationHint": "Must be >= 0, typically \u20ac0.50-\u20ac1.50 per cycle",
-                            "x-source": "BatteryConfig.cycle_cost"
+                            "x-source": "BatteryConfig.cycle cost"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_set_power_feedin",
+                          "scope": "#/properties/entity set power feedin",
                           "options": {
                             "help": "Optional: Home Assistant entity to control grid feed-in power. Used by scheduler to execute optimized battery operations.",
                             "description": "HA entity to set power feed-in to grid",
-                            "widget": "entity-picker",
                             "widgetFilter": "number,input_number",
-                            "x-source": "BatteryConfig.entity_set_power_feedin"
+                            "x-source": "BatteryConfig.entity set power feedin"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_set_operating_mode",
+                          "scope": "#/properties/entity set operating mode",
                           "options": {
                             "help": "Optional: Home Assistant entity to control battery operating mode (e.g., auto/manual/off). System will switch modes as needed for optimization.",
                             "description": "HA entity to set battery operating mode",
-                            "widget": "entity-picker",
                             "widgetFilter": "select,input_select,switch",
-                            "x-source": "BatteryConfig.entity_set_operating_mode"
+                            "x-source": "BatteryConfig.entity set operating mode"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_set_operating_mode_on",
+                          "scope": "#/properties/entity set operating mode on",
                           "options": {
                             "help": "Value to send to operating mode entity for 'ON' state. Example: 'auto', 'enabled', 'on'. Must match actual entity values.",
                             "description": "Value for operating mode ON",
-                            "x-source": "BatteryConfig.entity_set_operating_mode_on"
+                            "x-source": "BatteryConfig.entity set operating mode on"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_set_operating_mode_off",
+                          "scope": "#/properties/entity set operating mode off",
                           "options": {
                             "help": "Value to send to operating mode entity for 'OFF' state. Example: 'manual', 'disabled', 'off'. Must match actual entity values.",
                             "description": "Value for operating mode OFF",
-                            "x-source": "BatteryConfig.entity_set_operating_mode_off"
+                            "x-source": "BatteryConfig.entity set operating mode off"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_stop_inverter",
+                          "scope": "#/properties/entity stop inverter",
                           "options": {
                             "help": "Optional: Home Assistant entity to emergency stop the battery inverter. Rarely needed but available for safety scenarios.",
                             "description": "HA entity to stop inverter",
-                            "widget": "entity-picker",
                             "widgetFilter": "switch,button",
-                            "x-source": "BatteryConfig.entity_stop_inverter"
+                            "x-source": "BatteryConfig.entity stop inverter"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_balance_switch",
+                          "scope": "#/properties/entity stop victron",
+                          "options": {
+                            "help": "Optional: Home Assistant entity to stop a Victron battery inverter. Use this for Victron-specific stop control.",
+                            "description": "HA entity to stop Victron inverter",
+                            "widgetFilter": "switch,button",
+                            "x-source": "BatteryConfig.entity stop victron"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entity balance switch",
                           "options": {
                             "help": "Optional: Home Assistant entity to enable/disable grid balancing mode. Used for frequency regulation participation or grid services.",
                             "description": "HA entity for grid balancing switch",
-                            "widget": "entity-picker",
                             "widgetFilter": "switch",
-                            "x-source": "BatteryConfig.entity_balance_switch"
+                            "x-source": "BatteryConfig.entity balance switch"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_from_battery",
+                          "scope": "#/properties/entity from battery",
                           "options": {
                             "help": "Optional: Home Assistant sensor showing current power flow from battery in watts. Used for monitoring and validation.",
                             "description": "HA entity for power from battery",
                             "unit": "W",
-                            "widget": "entity-picker",
                             "widgetFilter": "sensor",
-                            "x-source": "BatteryConfig.entity_from_battery"
+                            "x-source": "BatteryConfig.entity from battery"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_from_pv",
+                          "scope": "#/properties/entity from pv",
                           "options": {
                             "help": "Optional: Home Assistant sensor showing current DC-coupled solar power in watts. Only relevant for DC-coupled solar installations.",
                             "description": "HA entity for power from PV",
                             "unit": "W",
-                            "widget": "entity-picker",
                             "widgetFilter": "sensor",
-                            "x-source": "BatteryConfig.entity_from_pv"
+                            "x-source": "BatteryConfig.entity from pv"
                           }
                         },
                         {
                           "type": "Control",
-                          "scope": "#/properties/entity_from_ac",
+                          "scope": "#/properties/entity from ac",
                           "options": {
                             "help": "Optional: Home Assistant sensor showing current AC grid power flow in watts. Used for monitoring overall system balance.",
                             "description": "HA entity for power from AC",
                             "unit": "W",
-                            "widget": "entity-picker",
                             "widgetFilter": "sensor",
-                            "x-source": "BatteryConfig.entity_from_ac"
+                            "x-source": "BatteryConfig.entity from ac"
                           }
                         }
                       ]
@@ -919,6 +916,7 @@
               "scope": "#/properties/solar",
               "options": {
                 "description": "Solar panel configurations",
+                "itemsRefType": "SolarConfig",
                 "title": "SolarConfig",
                 "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Solar-Configuration",
                 "detail": {
@@ -926,7 +924,7 @@
                   "elements": [
                     {
                       "type": "Group",
-                      "label": "Panel Orientation",
+                      "label": "ML Prediction",
                       "elements": [
                         {
                           "type": "HelpButton",
@@ -936,6 +934,31 @@
                             "docsUrl": "https://github.com/corneel27/day-ahead/wiki/Solar-Configuration"
                           }
                         },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/ml_prediction",
+                          "options": {
+                            "help": "Enable machine-learning-based solar production forecasting for this installation. Requires the predictor add-on to be set up and trained.",
+                            "description": "Use ML model to predict solar production for this installation",
+                            "x-source": "SolarConfig.ml_prediction"
+                          }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/entities sensors",
+                          "options": {
+                            "help": "Optional: Home Assistant sensor entity (or list of entities) measuring actual solar production. Used for reporting and ML model training.",
+                            "description": "HA sensor entities for measuring actual solar production",
+                            "widgetFilter": "sensor",
+                            "x-source": "SolarConfig.entities sensors"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "Group",
+                      "label": "Panel Orientation",
+                      "elements": [
                         {
                           "type": "Control",
                           "scope": "#/properties/name",
@@ -951,7 +974,6 @@
                           "options": {
                             "help": "Optional Home Assistant entity to enable or disable this solar installation in the optimization. Useful for maintenance or testing.",
                             "description": "HA entity to enable/disable this solar installation",
-                            "widget": "entity-picker",
                             "widgetFilter": "switch",
                             "x-source": "SolarConfig.entity pv switch"
                           }
@@ -1008,6 +1030,16 @@
                             "description": "Multiple panel strings with different configurations",
                             "x-source": "SolarConfig.strings"
                           }
+                        },
+                        {
+                          "type": "Control",
+                          "scope": "#/properties/max power",
+                          "options": {
+                            "help": "Optional. Limit the installation output to this value in kW. Use when your inverter/MPPT maximum power is less than the total panel capacity.",
+                            "description": "Maximum output power cap in kW (MPPT limit)",
+                            "unit": "kW",
+                            "x-source": "SolarConfig.max power"
+                          }
                         }
                       ]
                     }
@@ -1041,304 +1073,58 @@
     },
     {
       "type": "Category",
-      "label": "Heating",
+      "label": "General",
       "elements": [
         {
           "type": "Control",
-          "scope": "#/properties/boiler/properties/boiler present",
+          "scope": "#/properties/max gap",
           "options": {
-            "help": "Enable hot water boiler optimization. Set to true to include boiler in optimization, false to disable. Can also be HA entity ID for dynamic control.",
-            "description": "Whether boiler is present/enabled",
-            "widget": "entity-picker-or-boolean",
-            "x-source": "BoilerConfig.boiler present"
+            "help": "Maximum acceptable absolute gap for the MIP solver. Smaller values give more accurate results but take longer. Valid range: 0.00001\u20131.0. Default 0.005 euro.",
+            "description": "Maximum MIP gap (absolute) for the optimizer",
+            "unit": "euro",
+            "refType": "FlexFloat",
+            "x-source": "FlexFloat.max gap"
           }
         },
         {
           "type": "Control",
-          "scope": "#/properties/boiler/properties/entity actual temp.",
+          "scope": "#/properties/boiler",
           "options": {
-            "help": "Home Assistant sensor showing current hot water temperature in \u00b0C. Required for thermal state tracking and heating decisions.",
-            "description": "HA entity for actual water temperature",
-            "unit": "\u00b0C",
-            "widget": "entity-picker",
-            "widgetFilter": "sensor",
-            "x-source": "BoilerConfig.entity actual temp."
+            "description": "Hot water boiler configuration"
           }
         },
         {
           "type": "Control",
-          "scope": "#/properties/boiler/properties/entity setpoint",
+          "scope": "#/properties/heating",
           "options": {
-            "help": "Home Assistant entity for target water temperature. System will heat water to this temperature. Typical: 55-65\u00b0C for domestic hot water.",
-            "description": "HA entity for temperature setpoint",
-            "unit": "\u00b0C",
-            "widget": "entity-picker",
-            "widgetFilter": "input_number,number,sensor",
-            "x-source": "BoilerConfig.entity setpoint"
+            "description": "Heating system / heat pump configuration"
           }
         },
         {
           "type": "Control",
-          "scope": "#/properties/boiler/properties/entity hysterese",
+          "scope": "#/properties/xgboost/properties/tune_hyperparameters",
           "options": {
-            "help": "Home Assistant entity for temperature hysteresis in \u00b0C. Prevents excessive cycling. If setpoint=60\u00b0C and hysteresis=5\u00b0C, heating starts at 55\u00b0C.",
-            "description": "HA entity for temperature hysteresis",
-            "unit": "\u00b0C",
-            "widget": "entity-picker",
-            "widgetFilter": "input_number,number,sensor",
-            "x-source": "BoilerConfig.entity hysterese"
+            "help": "When enabled, the predictor performs a grid search over 'param_grid' to select the best XGBoost hyper-parameters. Increases training time significantly.",
+            "description": "Run GridSearchCV to find optimal hyper-parameters before training",
+            "x-source": "XGBoostConfig.tune_hyperparameters"
           }
         },
         {
           "type": "Control",
-          "scope": "#/properties/boiler/properties/entity boiler enabled",
+          "scope": "#/properties/xgboost/properties/param_grid",
           "options": {
-            "help": "Optional: Home Assistant binary sensor indicating if boiler is enabled. System will only optimize when boiler is enabled.",
-            "description": "HA entity for boiler enabled status",
-            "widget": "entity-picker",
-            "widgetFilter": "binary_sensor",
-            "x-source": "BoilerConfig.entity boiler enabled"
+            "help": "Free-form dict passed directly to sklearn GridSearchCV. Example: {\"n_estimators\": [100, 200], \"max_depth\": [3, 6]}. Leave empty to use the built-in defaults.",
+            "description": "Grid of hyper-parameters for GridSearchCV. Keys are XGBoost parameter names, values are lists of candidates.",
+            "x-source": "XGBoostConfig.param_grid"
           }
         },
         {
           "type": "Control",
-          "scope": "#/properties/boiler/properties/entity instant start",
+          "scope": "#/properties/xgboost/properties/parameters",
           "options": {
-            "help": "Optional: Home Assistant entity to trigger immediate boiler heating. Overrides optimized schedule for on-demand hot water.",
-            "description": "HA entity for instant start",
-            "widget": "entity-picker",
-            "widgetFilter": "switch,input_boolean,button",
-            "x-source": "BoilerConfig.entity instant start"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/boiler/properties/cop",
-          "options": {
-            "help": "Coefficient of Performance if using heat pump water heater. For resistive heating element, use 1.0. For heat pump water heater, typically 2.5-4.0.",
-            "description": "Coefficient of Performance",
-            "unit": "ratio",
-            "validationHint": "Must be > 0, use 1.0 for resistive, 2.5-4.0 for heat pump",
-            "x-source": "BoilerConfig.cop"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/boiler/properties/cooling rate",
-          "options": {
-            "help": "Rate at which water temperature drops when not heating, in \u00b0C per hour. Depends on insulation quality. Typical: 0.5-2.0\u00b0C/h for well-insulated boilers.",
-            "description": "Cooling rate in degrees per hour",
-            "unit": "\u00b0C/h",
-            "validationHint": "Must be >= 0, typically 0.5-2.0\u00b0C/h",
-            "x-source": "BoilerConfig.cooling rate"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/boiler/properties/volume",
-          "options": {
-            "help": "Hot water tank volume in liters. Affects thermal inertia and heating time. Typical residential: 100-300 liters.",
-            "description": "Water volume in liters",
-            "unit": "L",
-            "validationHint": "Must be > 0, typically 100-300L",
-            "x-source": "BoilerConfig.volume"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/boiler/properties/heating allowed below",
-          "options": {
-            "help": "Maximum temperature for starting heating cycle. Heating only occurs when water is below this temperature. Typically same as or slightly above setpoint.",
-            "description": "Temperature below which heating is allowed",
-            "unit": "\u00b0C",
-            "validationHint": "Should be >= setpoint",
-            "x-source": "BoilerConfig.heating allowed below"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/boiler/properties/elec. power",
-          "options": {
-            "help": "Electrical power consumption of heating element or heat pump compressor in watts. Typical: 1000-3000W for resistive, 400-800W for heat pump water heater.",
-            "description": "Electrical power in watts",
-            "unit": "W",
-            "validationHint": "Must be > 0, typically 1000-3000W",
-            "x-source": "BoilerConfig.elec. power"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/boiler/properties/activate service",
-          "options": {
-            "help": "Home Assistant service type to trigger boiler heating. Use 'press' for button entities, 'switch' for switch entities, or custom service names.",
-            "description": "Service type to activate boiler (e.g., 'press', 'switch')",
-            "x-source": "BoilerConfig.activate service"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/boiler/properties/activate entity",
-          "options": {
-            "help": "Home Assistant entity used to activate boiler heating. System will trigger this entity using activate_service when heating is needed.",
-            "description": "HA entity to activate boiler",
-            "widget": "entity-picker",
-            "widgetFilter": "button,switch",
-            "x-source": "BoilerConfig.activate entity"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/heater present",
-          "options": {
-            "help": "Enable heating system optimization. Set to true to include heat pump in optimization, false to disable. Can also be HA entity ID for dynamic control.",
-            "description": "Whether heating system is present/enabled",
-            "widget": "entity-picker-or-boolean",
-            "x-source": "HeatingConfig.heater present"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/entity hp enabled",
-          "options": {
-            "help": "Optional: Home Assistant binary sensor indicating if heat pump is enabled and operational. System will only optimize when enabled.",
-            "description": "HA binary sensor for heat pump enabled status",
-            "widget": "entity-picker",
-            "widgetFilter": "binary_sensor",
-            "x-source": "HeatingConfig.entity hp enabled"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/degree days factor",
-          "options": {
-            "help": "Multiplier for degree-day heat demand calculation. Adjust based on building insulation and heat loss. Higher = more heat needed. Typical: 0.5-2.0.",
-            "description": "Degree days factor for heat demand calculation",
-            "unit": "factor",
-            "validationHint": "Must be > 0, typically 0.5-2.0",
-            "x-source": "HeatingConfig.degree days factor"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/adjustment",
-          "options": {
-            "help": "Heat pump control mode: 'on/off' = simple binary control, 'power' = variable power control, 'heating curve' = adjust heating curve based on weather.",
-            "description": "Adjustment mode",
-            "x-source": "HeatingConfig.adjustment"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/stages",
-          "options": {
-            "help": "Power and efficiency stages for heat pump. At least one stage required. Multiple stages model variable-speed compressors. Must be sorted by power ascending.",
-            "description": "Heating power/COP stages",
-            "validationHint": "At least 1 stage, must be sorted by max_power",
-            "x-source": "HeatingConfig.stages"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/entity adjust heating curve",
-          "options": {
-            "help": "Optional: Home Assistant entity to adjust heating curve. Used when adjustment mode is 'heating curve'. Controls water temperature based on outdoor temperature.",
-            "description": "HA entity to adjust heating curve",
-            "widget": "entity-picker",
-            "widgetFilter": "number,input_number",
-            "x-source": "HeatingConfig.entity adjust heating curve"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/adjustment factor",
-          "options": {
-            "help": "Optional: Multiplier for heating curve adjustments. Higher values = more aggressive adjustments. Typical: 0.5-2.0.",
-            "description": "Factor for heating curve adjustment",
-            "unit": "factor",
-            "validationHint": "Typically 0.5-2.0 if specified",
-            "x-source": "HeatingConfig.adjustment factor"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/min run length",
-          "options": {
-            "help": "Minimum number of consecutive time intervals heat pump must run once started. Prevents excessive on/off cycling which reduces efficiency and equipment life. Typical: 2-4 intervals (2-4 hours).",
-            "description": "Minimum run length in time intervals",
-            "unit": "intervals",
-            "validationHint": "Must be >= 1, typically 2-4 for 1h intervals",
-            "x-source": "HeatingConfig.min run length"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/entity hp heat produced",
-          "options": {
-            "help": "Optional: Home Assistant sensor showing total heat energy produced. Used for monitoring and validation.",
-            "description": "HA entity for heat produced",
-            "unit": "kWh",
-            "widget": "entity-picker",
-            "widgetFilter": "sensor",
-            "x-source": "HeatingConfig.entity hp heat produced"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/entity hp heat demand",
-          "options": {
-            "help": "Optional: Home Assistant sensor showing current heat demand. Can be used instead of degree-day calculation for more accurate demand forecasting.",
-            "description": "HA entity for heat demand",
-            "unit": "W",
-            "widget": "entity-picker",
-            "widgetFilter": "sensor",
-            "x-source": "HeatingConfig.entity hp heat demand"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/entity avg temp",
-          "options": {
-            "help": "Optional: Home Assistant sensor for outdoor average temperature. Used for degree-day calculations and COP adjustments.",
-            "description": "HA entity for average temperature",
-            "unit": "\u00b0C",
-            "widget": "entity-picker",
-            "widgetFilter": "sensor",
-            "x-source": "HeatingConfig.entity avg temp"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/entity hp cop",
-          "options": {
-            "help": "Optional: Home Assistant sensor showing current COP. Can be used for monitoring or to override stage-based COP calculations.",
-            "description": "HA entity for heat pump COP",
-            "unit": "ratio",
-            "widget": "entity-picker",
-            "widgetFilter": "sensor",
-            "x-source": "HeatingConfig.entity hp cop"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/entity hp power",
-          "options": {
-            "help": "Optional: Home Assistant sensor showing current electrical power consumption. Used for monitoring and validation.",
-            "description": "HA entity for heat pump power",
-            "unit": "W",
-            "widget": "entity-picker",
-            "widgetFilter": "sensor",
-            "x-source": "HeatingConfig.entity hp power"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/heating/properties/entity hp switch",
-          "options": {
-            "help": "Optional: Home Assistant switch to control heat pump on/off. Used by scheduler to execute optimized heating schedule.",
-            "description": "HA entity to control heat pump on/off",
-            "widget": "entity-picker",
-            "widgetFilter": "switch",
-            "x-source": "HeatingConfig.entity hp switch"
+            "help": "Free-form dict of XGBoost parameters used when tune_hyperparameters is disabled. Example: {\"n_estimators\": 200, \"max_depth\": 6, \"learning_rate\": 0.1}. Leave empty to use the built-in defaults.",
+            "description": "Fixed hyper-parameters used when tune_hyperparameters is false. Keys are XGBoost parameter names.",
+            "x-source": "XGBoostConfig.parameters"
           }
         }
       ]
@@ -1505,7 +1291,7 @@
               "type": "Control",
               "scope": "#/properties/dashboard/properties/port",
               "options": {
-                "help": "Port number for Day Ahead Optimizer web dashboard. Access at http://homeassistant.local:PORT. Must be between 1024-65535 (non-privileged ports).",
+                "help": "Port number for DAO web dashboard. Access at http://homeassistant.local:PORT. Must be between 1024-65535 (non-privileged ports).",
                 "description": "Web UI port number",
                 "unit": "port",
                 "validationHint": "1024-65535, default 5000",
@@ -1574,6 +1360,27 @@
             },
             {
               "type": "Control",
+              "scope": "#/properties/database ha/properties/db_path",
+              "options": {
+                "help": "Directory path for SQLite database file.",
+                "description": "Database path for SQLite",
+                "x-source": "Home Assistant Database.db_path"
+              },
+              "rule": {
+                "condition": {
+                  "schema": {
+                    "enum": [
+                      "mysql",
+                      "postgresql"
+                    ]
+                  },
+                  "scope": "#/properties/engine"
+                },
+                "effect": "HIDE"
+              }
+            },
+            {
+              "type": "Control",
               "scope": "#/properties/database ha/properties/database",
               "options": {
                 "help": "Name of the Home Assistant database. Default 'homeassistant' matches standard HA installation.",
@@ -1636,7 +1443,6 @@
               "options": {
                 "help": "Optional: Home Assistant notification service entity. Used to send notifications about optimization events. Example: 'notify.mobile_app' or 'notify.persistent_notification'.",
                 "description": "HA entity for notifications",
-                "widget": "entity-picker",
                 "widgetFilter": "notify",
                 "x-source": "NotificationsConfig.notification entity"
               }
@@ -1645,9 +1451,8 @@
               "type": "Control",
               "scope": "#/properties/notifications/properties/opstarten",
               "options": {
-                "help": "Send notification when Day Ahead Optimizer starts up. Useful for monitoring add-on status. Can be boolean or HA entity ID.",
+                "help": "Send notification when Day Ahead Optimizer starts up. Useful for monitoring add-on status.",
                 "description": "Send notification on startup",
-                "widget": "entity-picker-or-boolean",
                 "x-source": "NotificationsConfig.opstarten"
               }
             },
@@ -1655,9 +1460,8 @@
               "type": "Control",
               "scope": "#/properties/notifications/properties/berekening",
               "options": {
-                "help": "Send notification when optimization calculation completes. Includes summary of results (costs, battery schedule, etc.). Can be boolean or HA entity ID.",
+                "help": "Send notification when optimization calculation completes. Includes summary of results (costs, battery schedule, etc.).",
                 "description": "Send notification on calculation completion",
-                "widget": "entity-picker-or-boolean",
                 "x-source": "NotificationsConfig.berekening"
               }
             },
@@ -1667,7 +1471,6 @@
               "options": {
                 "help": "Optional: Home Assistant entity to update with last activity timestamp. Useful for monitoring and automations. Example: 'input_datetime.dao_last_run'.",
                 "description": "HA entity to track last activity timestamp",
-                "widget": "entity-picker",
                 "widgetFilter": "input_datetime,datetime,sensor",
                 "x-source": "NotificationsConfig.last activity entity"
               }
@@ -1684,7 +1487,6 @@
               "options": {
                 "help": "Tibber API access token. Get from Tibber app or developer portal. Use !secret for security. Required if using Tibber as price source.",
                 "description": "Tibber API token (can use !secret)",
-                "widget": "secret-picker",
                 "validationHint": "Use !secret for API tokens",
                 "x-source": "TibberConfig.api_token"
               }
@@ -1712,24 +1514,24 @@
           "elements": [
             {
               "type": "Control",
-              "scope": "#/properties/prices/properties/cost_supplier_consumption",
+              "scope": "#/properties/prices/properties/cost supplier consumption",
               "options": {
                 "help": "Supplier markup/fees for consumption (excluding VAT) indexed by effective date. Fixed part of electricity cost. Format: {'2024-01-01': 0.02}.",
                 "description": "Supplier costs for consumption by date (YYYY-MM-DD -> euro/kWh ex VAT)",
                 "unit": "\u20ac/kWh",
                 "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)",
-                "x-source": "PricingConfig.cost_supplier_consumption"
+                "x-source": "PricingConfig.cost supplier consumption"
               }
             },
             {
               "type": "Control",
-              "scope": "#/properties/prices/properties/cost_supplier_production",
+              "scope": "#/properties/prices/properties/cost supplier production",
               "options": {
                 "help": "Supplier fees for feed-in/production (excluding VAT) indexed by effective date. May be negative (credit). Format: {'2024-01-01': -0.02}.",
                 "description": "Supplier costs for production by date (YYYY-MM-DD -> euro/kWh ex VAT)",
                 "unit": "\u20ac/kWh",
                 "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)",
-                "x-source": "PricingConfig.cost_supplier_production"
+                "x-source": "PricingConfig.cost supplier production"
               }
             }
           ]
@@ -1740,21 +1542,21 @@
           "elements": [
             {
               "type": "Control",
-              "scope": "#/properties/prices/properties/source_day_ahead",
+              "scope": "#/properties/prices/properties/source day ahead",
               "options": {
                 "help": "Data source for day-ahead electricity market prices. 'nordpool' for Nordic/Baltic, 'entsoe' for European markets, 'tibber' if using Tibber integration.",
                 "description": "Source for day-ahead prices",
-                "x-source": "PricingConfig.source_day_ahead"
+                "x-source": "PricingConfig.source day ahead"
               }
             },
             {
               "type": "Control",
-              "scope": "#/properties/prices/properties/entsoe_api_key",
+              "scope": "#/properties/prices/properties/entsoe-api-key",
               "options": {
                 "help": "API key for ENTSO-E Transparency Platform. Required if source_day_ahead='entsoe'. Get free key at transparency.entsoe.eu. Use !secret for security.",
                 "description": "ENTSO-E API key (can use !secret)",
                 "validationHint": "Required for entsoe source, use !secret",
-                "x-source": "PricingConfig.entsoe_api_key"
+                "x-source": "PricingConfig.entsoe-api-key"
               },
               "rule": {
                 "condition": {
@@ -1768,12 +1570,12 @@
             },
             {
               "type": "Control",
-              "scope": "#/properties/prices/properties/last_invoice",
+              "scope": "#/properties/prices/properties/last invoice",
               "options": {
                 "help": "Date of last electricity invoice. Used for calculating costs since last billing period. Format: YYYY-MM-DD. Update after receiving invoices.",
                 "description": "Date of last invoice (YYYY-MM-DD)",
                 "validationHint": "Must be YYYY-MM-DD format",
-                "x-source": "PricingConfig.last_invoice"
+                "x-source": "PricingConfig.last invoice"
               }
             }
           ]
@@ -1784,56 +1586,55 @@
           "elements": [
             {
               "type": "Control",
-              "scope": "#/properties/prices/properties/energy_taxes_consumption",
+              "scope": "#/properties/prices/properties/energy taxes consumption",
               "options": {
                 "help": "Energy taxes on consumption (excluding VAT) indexed by effective date. Format: {'2024-01-01': 0.05}. Use date when tariff changes.",
                 "description": "Energy taxes for consumption by date (YYYY-MM-DD -> euro/kWh ex VAT)",
                 "unit": "\u20ac/kWh",
                 "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)",
-                "x-source": "PricingConfig.energy_taxes_consumption"
+                "x-source": "PricingConfig.energy taxes consumption"
               }
             },
             {
               "type": "Control",
-              "scope": "#/properties/prices/properties/energy_taxes_production",
+              "scope": "#/properties/prices/properties/energy taxes production",
               "options": {
                 "help": "Energy taxes on feed-in/production (excluding VAT) indexed by effective date. Often zero or negative. Format: {'2024-01-01': 0.0}.",
                 "description": "Energy taxes for production by date (YYYY-MM-DD -> euro/kWh ex VAT)",
                 "unit": "\u20ac/kWh",
                 "validationHint": "Dict with YYYY-MM-DD keys, float values (ex VAT)",
-                "x-source": "PricingConfig.energy_taxes_production"
+                "x-source": "PricingConfig.energy taxes production"
               }
             },
             {
               "type": "Control",
-              "scope": "#/properties/prices/properties/vat_consumption",
+              "scope": "#/properties/prices/properties/vat consumption",
               "options": {
                 "help": "VAT percentage on consumption indexed by effective date. Format: {'2024-01-01': 21}. Applied to market price + taxes + supplier costs.",
                 "description": "VAT percentage for consumption by date (YYYY-MM-DD -> %)",
                 "unit": "%",
                 "validationHint": "Dict with YYYY-MM-DD keys, integer 0-100 values",
-                "x-source": "PricingConfig.vat_consumption"
+                "x-source": "PricingConfig.vat consumption"
               }
             },
             {
               "type": "Control",
-              "scope": "#/properties/prices/properties/vat_production",
+              "scope": "#/properties/prices/properties/vat production",
               "options": {
                 "help": "VAT percentage on feed-in/production indexed by effective date. Format: {'2024-01-01': 21}. Often same as consumption VAT.",
                 "description": "VAT percentage for production by date (YYYY-MM-DD -> %)",
                 "unit": "%",
                 "validationHint": "Dict with YYYY-MM-DD keys, integer 0-100 values",
-                "x-source": "PricingConfig.vat_production"
+                "x-source": "PricingConfig.vat production"
               }
             },
             {
               "type": "Control",
-              "scope": "#/properties/prices/properties/tax_refund",
+              "scope": "#/properties/prices/properties/tax refund",
               "options": {
-                "help": "Enable tax refund calculation if eligible. Some regions/users get energy tax refunds for solar production. Can be boolean or HA entity ID.",
+                "help": "Enable tax refund calculation if eligible. Some regions/users get energy tax refunds for solar production.",
                 "description": "Whether tax refund applies",
-                "widget": "entity-picker-or-boolean",
-                "x-source": "PricingConfig.tax_refund"
+                "x-source": "PricingConfig.tax refund"
               }
             }
           ]
@@ -1855,7 +1656,6 @@
                 "help": "List of Home Assistant sensor entities measuring grid consumption (import). Used for actual vs optimized comparison and reporting.",
                 "description": "HA entities for grid consumption",
                 "unit": "kWh",
-                "widget": "entity-list-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.entities grid consumption"
               }
@@ -1867,7 +1667,6 @@
                 "help": "List of Home Assistant sensor entities measuring grid production (export/feed-in). Used for production reporting and solar surplus calculation.",
                 "description": "HA entities for grid production",
                 "unit": "kWh",
-                "widget": "entity-list-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.entities grid production"
               }
@@ -1879,7 +1678,6 @@
                 "help": "List of Home Assistant sensor entities for AC-coupled solar production. After inverter, directly to AC side. Separate from DC-coupled solar.",
                 "description": "HA entities for AC solar production",
                 "unit": "kWh",
-                "widget": "entity-list-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.entities solar production ac"
               }
@@ -1891,7 +1689,6 @@
                 "help": "List of Home Assistant sensor entities for DC-coupled solar production. Before inverter, directly to battery DC bus. Separate from AC-coupled solar.",
                 "description": "HA entities for DC solar production",
                 "unit": "kWh",
-                "widget": "entity-list-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.entities solar production dc"
               }
@@ -1903,7 +1700,6 @@
                 "help": "List of Home Assistant sensor entities measuring EV charging consumption. Used for EV-specific energy reporting and cost allocation.",
                 "description": "HA entities for EV consumption",
                 "unit": "kWh",
-                "widget": "entity-list-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.entities ev consumption"
               }
@@ -1915,7 +1711,6 @@
                 "help": "List of Home Assistant sensor entities measuring heat pump consumption. Used for heating-specific energy reporting and COP calculation.",
                 "description": "HA entities for heat pump (warmtepomp) consumption",
                 "unit": "kWh",
-                "widget": "entity-list-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.entities wp consumption"
               }
@@ -1927,7 +1722,6 @@
                 "help": "List of Home Assistant sensor entities measuring hot water boiler consumption. Used for boiler-specific energy reporting.",
                 "description": "HA entities for boiler consumption",
                 "unit": "kWh",
-                "widget": "entity-list-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.entities boiler consumption"
               }
@@ -1939,7 +1733,6 @@
                 "help": "List of Home Assistant sensor entities measuring battery charging (consumption). Used for battery efficiency and cycling cost calculation.",
                 "description": "HA entities for battery consumption",
                 "unit": "kWh",
-                "widget": "entity-list-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.entities battery consumption"
               }
@@ -1951,7 +1744,6 @@
                 "help": "List of Home Assistant sensor entities measuring battery discharging (production). Used for battery efficiency and round-trip calculation.",
                 "description": "HA entities for battery production",
                 "unit": "kWh",
-                "widget": "entity-list-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.entities battery production"
               }
@@ -1963,7 +1755,6 @@
                 "help": "List of Home Assistant sensor entities measuring appliance/machine consumption (washing machine, dishwasher, etc.). Used for machine-specific reporting.",
                 "description": "HA entities for machine consumption",
                 "unit": "kWh",
-                "widget": "entity-list-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.entities machine consumption"
               }
@@ -1975,7 +1766,6 @@
                 "help": "Optional: Home Assistant sensor for grid CO2 intensity (gCO2/kWh). Used to calculate and report carbon footprint of electricity usage.",
                 "description": "HA entity for CO2 intensity",
                 "unit": "gCO2/kWh",
-                "widget": "entity-picker",
                 "widgetFilter": "sensor",
                 "x-source": "ReportConfig.co2 intensity sensor"
               }

@@ -9,17 +9,18 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 # Valid scheduler actions
 SchedulerAction = Literal[
     'get_meteo_data',
-    'get_tibber_data', 
+    'get_tibber_data',
     'get_day_ahead_prices',
     'calc_optimum',
     'clean_data',
-    'calc_baseloads'
+    'calc_baseloads',
+    'train_ml_predictions'
 ]
 
 
 class ScheduleEntry(BaseModel):
     """A single scheduled task entry."""
-    
+
     time: str = Field(
         description="Time pattern in HHMM format",
         json_schema_extra={
@@ -33,71 +34,45 @@ class ScheduleEntry(BaseModel):
             "x-help": "Task to run: data collection, optimization, or maintenance"
         }
     )
-    
+
     @field_validator('time')
     @classmethod
     def validate_time_pattern(cls, v: str) -> str:
-        """Validate time pattern format."""
         if not isinstance(v, str) or len(v) != 4:
             raise ValueError("Time pattern must be 4 characters (HHMM format)")
-        
-        # Check format: either HHMM digits or xxMM wildcard
         if not (v.isdigit() or (v[0:2] == 'xx' and v[2:4].isdigit())):
             raise ValueError("Time must be HHMM digits or 'xx' wildcard for hours")
-        
-        # Validate hour range if not wildcard
         if v[0:2] != 'xx':
             hour = int(v[0:2])
             if hour > 23:
                 raise ValueError("Hour must be between 00 and 23")
-        
-        # Validate minute range
         minute = int(v[2:4])
         if minute > 59:
             raise ValueError("Minute must be between 00 and 59")
-        
         return v
 
 
 class SchedulerConfig(BaseModel):
-    """
-    Task scheduler configuration.
-    
-    Configure automatic task execution based on time patterns.
-    
-    Time patterns can be:
-    - Specific times: "0435", "1255" (HHMM format, 24-hour)
-    - Wildcards: "xx00" (every hour at :00), "xx15" (every hour at :15)
-    
-    Actions include:
-    - get_meteo_data: Fetch weather forecasts
-    - get_tibber_data: Fetch Tibber prices
-    - get_day_ahead_prices: Fetch day-ahead market prices
-    - calc_optimum: Run optimization algorithm
-    - clean_data: Clean up old data
-    - calc_baseloads: Calculate baseline consumption
-    """
-    
+    """Task scheduler configuration."""
+
     active: bool = Field(
-        default=False,
+        default=True,
         description="Enable or disable the scheduler",
         json_schema_extra={
             "x-help": "When enabled, scheduled tasks will run automatically at configured times. Disable to prevent all scheduled tasks from running.",
-            'x-ui-section': 'Scheduler',
+            "x-ui-section": "Scheduler",
             "x-order": 1
         }
     )
-    
     schedule: list[ScheduleEntry] = Field(
         default_factory=list,
         description="Scheduled task entries",
         json_schema_extra={
             "x-help": "Define when tasks should run. Add entries with time patterns (e.g., '0435', 'xx00') and actions.",
-            'x-ui-section': 'Scheduler',
+            "x-ui-section": "Scheduler",
             "x-order": 2
         }
     )
-    
     model_config = ConfigDict(
         json_schema_extra={
             'x-ui-group': 'DAO',

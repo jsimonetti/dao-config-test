@@ -311,12 +311,13 @@ const EntityListPickerRenderer: React.FC<ControlProps> = ({
   )
 }
 
-// Tester that matches fields with x-ui-widget: entity-list-picker
+// Helper to get $ref type name
+// Tester that matches list[EntityId] by itemsRefType in UISchema options
 export const entityListPickerTester = rankWith(
   15, // High priority
-  (uischema) => {
-    const widget = uischema?.options?.widget
-    return widget === 'entity-list-picker'
+  (uischema, schema) => {
+    // Check UISchema options for itemsRefType metadata (for arrays)
+    return schema?.type === 'array' && uischema.options?.itemsRefType === 'EntityId'
   }
 )
 

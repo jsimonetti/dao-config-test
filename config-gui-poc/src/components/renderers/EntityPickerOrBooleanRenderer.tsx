@@ -162,12 +162,12 @@ const EntityPickerOrBooleanRenderer: React.FC<ControlProps> = (props) => {
   )
 }
 
-// Tester that matches fields with x-ui-widget: entity-picker-or-boolean
+// Tester that matches FlexBool fields by refType in UISchema options
 export const entityPickerOrBooleanTester = rankWith(
   15, // High priority
-  (uischema) => {
-    const widget = uischema?.options?.widget
-    return widget === 'entity-picker-or-boolean'
+  (uischema, _schema) => {
+    // Check UISchema options for refType metadata
+    return uischema.options?.refType === 'FlexBool'
   }
 )
 

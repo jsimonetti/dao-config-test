@@ -170,12 +170,13 @@ const EntityPickerOrNumberRenderer: React.FC<EntityPickerOrNumberRendererProps> 
   )
 }
 
-// Tester that matches fields with x-ui-widget: entity-picker-or-number
+// Tester that matches FlexInt/FlexFloat fields by refType in UISchema options
 export const entityPickerOrNumberTester = rankWith(
   15, // High priority
-  (uischema) => {
-    const widget = uischema?.options?.widget
-    return widget === 'entity-picker-or-number'
+  (uischema, _schema) => {
+    // Check UISchema options for refType metadata
+    const refType = uischema.options?.refType
+    return refType === 'FlexInt' || refType === 'FlexFloat'
   }
 )
 

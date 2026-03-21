@@ -301,12 +301,13 @@ const EntityPickerRenderer: React.FC<ControlProps> = ({
 // Export unwrapped component for reuse in FlexValue renderers
 export { EntityPickerRenderer }
 
-// Tester that matches fields with x-ui-widget: entity-picker
+// Helper to get $ref type name
+// Tester that matches EntityId fields by refType in UISchema options
 export const entityPickerTester = rankWith(
   15, // High priority
-  (uischema) => {
-    const widget = uischema?.options?.widget
-    return widget === 'entity-picker'
+  (uischema, _schema) => {
+    // Check UISchema options for refType metadata (survives $ref resolution)
+    return uischema.options?.refType === 'EntityId'
   }
 )
 

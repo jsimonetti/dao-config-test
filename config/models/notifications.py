@@ -4,48 +4,45 @@ Notification configuration models.
 
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
+from .base import EntityId
 
 
 class NotificationsConfig(BaseModel):
     """Notification settings for Home Assistant."""
     
-    notification_entity: Optional[str] = Field(
+    notification_entity: Optional[EntityId] = Field(
         default=None,
         alias="notification entity",
         description="HA entity for notifications",
         json_schema_extra={
             "x-help": "Optional: Home Assistant notification service entity. Used to send notifications about optimization events. Example: 'notify.mobile_app' or 'notify.persistent_notification'.",
             "x-ui-section": "Notification Settings",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "notify"
         }
     )
-    opstarten: bool | str = Field(
-        default="false",
+    opstarten: bool = Field(
+        default=False,
         description="Send notification on startup",
         json_schema_extra={
-            "x-help": "Send notification when Day Ahead Optimizer starts up. Useful for monitoring add-on status. Can be boolean or HA entity ID.",
-            "x-ui-section": "Notification Settings",
-            "x-ui-widget": "entity-picker-or-boolean"
+            "x-help": "Send notification when Day Ahead Optimizer starts up. Useful for monitoring add-on status.",
+            "x-ui-section": "Notification Settings"
         }
     )
-    berekening: bool | str = Field(
-        default="false",
+    berekening: bool = Field(
+        default=False,
         description="Send notification on calculation completion",
         json_schema_extra={
-            "x-help": "Send notification when optimization calculation completes. Includes summary of results (costs, battery schedule, etc.). Can be boolean or HA entity ID.",
-            "x-ui-section": "Notification Settings",
-            "x-ui-widget": "entity-picker-or-boolean"
+            "x-help": "Send notification when optimization calculation completes. Includes summary of results (costs, battery schedule, etc.).",
+            "x-ui-section": "Notification Settings"
         }
     )
-    last_activity_entity: Optional[str] = Field(
+    last_activity_entity: Optional[EntityId] = Field(
         default=None,
         alias="last activity entity",
         description="HA entity to track last activity timestamp",
         json_schema_extra={
             "x-help": "Optional: Home Assistant entity to update with last activity timestamp. Useful for monitoring and automations. Example: 'input_datetime.dao_last_run'.",
             "x-ui-section": "Notification Settings",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "input_datetime,datetime,sensor"
         }
     )

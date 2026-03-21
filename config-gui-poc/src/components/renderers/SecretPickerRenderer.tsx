@@ -133,12 +133,12 @@ const SecretPickerRenderer: React.FC<ControlProps> = ({
   )
 }
 
-// Tester that matches fields with x-ui-widget: secret-picker
+// Tester that matches SecretStr fields by refType in UISchema options
 export const secretPickerTester = rankWith(
   15, // High priority
-  (uischema) => {
-    const widget = uischema?.options?.widget
-    return widget === 'secret-picker'
+  (uischema, _schema) => {
+    // Check UISchema options for refType metadata
+    return uischema.options?.refType === 'SecretStr'
   }
 )
 

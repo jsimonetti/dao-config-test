@@ -26,9 +26,6 @@ cd /Users/jeroens/dev/simonetti/config
 # Activate Python virtual environment
 source .venv/bin/activate
 
-# Activate Node.js virtual environment
-source .nodeenv/bin/activate
-
 # Verify installations
 node --version   # Should show Node.js version
 npm --version    # Should show npm version

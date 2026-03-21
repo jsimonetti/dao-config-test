@@ -2,8 +2,9 @@
 Solar configuration models.
 """
 
-from typing import Optional
-from pydantic import BaseModel, Field, model_validator, ConfigDict
+from typing import Any, Optional
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+from ..base import EntityId
 
 
 class SolarString(BaseModel):
@@ -39,6 +40,34 @@ class SolarString(BaseModel):
             "x-validation-hint": "Must be greater than 0"
         }
     )
+    ml_prediction: bool = Field(
+        default=False,
+        description="Use ML model to predict solar production for this installation",
+        json_schema_extra={
+            "x-help": "Enable machine-learning-based solar production forecasting for this installation. Requires the predictor add-on to be set up and trained.",
+            "x-ui-section": "ML Prediction"
+        }
+    )
+    entities_sensors: list[EntityId] = Field(
+        default_factory=list,
+        alias="entities sensors",
+        description="HA sensor entities for measuring actual solar production",
+        json_schema_extra={
+            "x-help": "Optional: Home Assistant sensor entity (or list of entities) measuring actual solar production. Used for reporting and ML model training.",
+            "x-ui-section": "ML Prediction",
+            "x-ui-widget-filter": "sensor"
+        }
+    )
+    max_power: Optional[float] = Field(
+        default=None,
+        alias="max power",
+        description="Maximum output power cap in kW (MPPT limit)",
+        json_schema_extra={
+            "x-help": "Optional. Limit the string output to this value in kW. Use when your MPPT maximum power is less than the total panel capacity.",
+            "x-unit": "kW",
+            "x-ui-section": "Panel Orientation"
+        }
+    )
     yield_factor: float = Field(
         alias="yield",
         gt=0,
@@ -71,14 +100,13 @@ class SolarConfig(BaseModel):
             "x-ui-section": "Panel Orientation"
         }
     )
-    entity_pv_switch: Optional[str] = Field(
+    entity_pv_switch: Optional[EntityId] = Field(
         default=None,
         alias="entity pv switch",
         description="HA entity to enable/disable this solar installation",
         json_schema_extra={
             "x-help": "Optional Home Assistant entity to enable or disable this solar installation in the optimization. Useful for maintenance or testing.",
             "x-ui-section": "Panel Orientation",
-            "x-ui-widget": "entity-picker",
             "x-ui-widget-filter": "switch"
         }
     )
@@ -131,15 +159,45 @@ class SolarConfig(BaseModel):
     )
     
     # Option 2: Multiple strings
-    strings: Optional[list[SolarString]] = Field(
-        default=None,
+    strings: list[SolarString] = Field(
+        default_factory=list,
         description="Multiple panel strings with different configurations",
         json_schema_extra={
             "x-help": "Advanced: Configure multiple strings for panels with different orientations or tilts. Use this OR flat config (tilt/orientation/capacity/yield), not both.",
             "x-ui-section": "Panel Orientation"
         }
     )
-    
+
+    # ML prediction
+    ml_prediction: bool = Field(
+        default=False,
+        description="Use ML model to predict solar production for this installation",
+        json_schema_extra={
+            "x-help": "Enable machine-learning-based solar production forecasting for this installation. Requires the predictor add-on to be set up and trained.",
+            "x-ui-section": "ML Prediction"
+        }
+    )
+    entities_sensors: list[EntityId] = Field(
+        default_factory=list,
+        alias="entities sensors",
+        description="HA sensor entities for measuring actual solar production",
+        json_schema_extra={
+            "x-help": "Optional: Home Assistant sensor entity (or list of entities) measuring actual solar production. Used for reporting and ML model training.",
+            "x-ui-section": "ML Prediction",
+            "x-ui-widget-filter": "sensor"
+        }
+    )
+    max_power: Optional[float] = Field(
+        default=None,
+        alias="max power",
+        description="Maximum output power cap in kW (MPPT limit)",
+        json_schema_extra={
+            "x-help": "Optional. Limit the installation output to this value in kW. Use when your inverter/MPPT maximum power is less than the total panel capacity.",
+            "x-unit": "kW",
+            "x-ui-section": "Panel Orientation"
+        }
+    )
+
     model_config = ConfigDict(
         extra='allow',
         populate_by_name=True,
@@ -175,6 +233,16 @@ For panels facing different directions, use the 'strings' configuration:
         }
     )
     
+    @field_validator('entities_sensors', mode='before')
+    @classmethod
+    def coerce_entities_to_list(cls, v: Any) -> list[str]:
+        """Allow a single entity ID string to be given without wrapping it in a list."""
+        if v is None:
+            return []
+        if isinstance(v, str):
+            return [v]
+        return v
+
     @model_validator(mode='after')
     def validate_config_completeness(self) -> 'SolarConfig':
         """Ensure either flat config or strings are provided."""
@@ -184,7 +252,7 @@ For panels facing different directions, use the 'strings' configuration:
             self.capacity is not None,
             self.yield_factor is not None
         ])
-        has_strings = self.strings is not None and len(self.strings) > 0
+        has_strings = bool(self.strings)
         
         if not has_flat and not has_strings:
             raise ValueError(
@@ -211,3 +279,21 @@ For panels facing different directions, use the 'strings' configuration:
         if self.is_multi_string:
             return sum(s.capacity for s in self.strings)
         return self.capacity or 0.0
+
+    @property
+    def effective_tilt(self) -> float:
+        """Capacity-weighted average tilt across all strings, or flat tilt. Defaults to 45."""
+        if self.is_multi_string:
+            total = self.total_capacity
+            if total > 0:
+                return sum(s.tilt * s.capacity for s in self.strings) / total
+        return self.tilt if self.tilt is not None else 45.0
+
+    @property
+    def effective_orientation(self) -> float:
+        """Capacity-weighted average orientation across all strings, or flat orientation. Defaults to 0."""
+        if self.is_multi_string:
+            total = self.total_capacity
+            if total > 0:
+                return sum(s.orientation * s.capacity for s in self.strings) / total
+        return self.orientation if self.orientation is not None else 0.0
