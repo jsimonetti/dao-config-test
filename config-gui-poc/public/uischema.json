@@ -214,6 +214,7 @@
                 "help": "Long-lived access token for HA API. Usually auto-provided when running as add-on. Create manually: Profile \u2192 Security \u2192 Long-Lived Access Tokens. Use !secret for security.",
                 "description": "Home Assistant long-lived access token (can use !secret)",
                 "validationHint": "Auto-provided as add-on, use !secret if manual",
+                "refType": "SecretStr",
                 "x-source": "HomeAssistantConfig.token"
               }
             },
@@ -1286,6 +1287,7 @@
                 "help": "Database password. Use secrets.json with '!secret password_key' for security. Never store passwords directly in config.",
                 "description": "MySQL password (can use !secret)",
                 "validationHint": "Use !secret for passwords",
+                "refType": "SecretStr",
                 "x-source": "DatabaseConfig.password"
               },
               "rule": {
@@ -1452,6 +1454,7 @@
                 "help": "Database password. Use secrets.json with '!secret password_key' pattern for security. Never store passwords directly in config.",
                 "description": "Database password (can use !secret)",
                 "validationHint": "Use !secret for passwords",
+                "refType": "SecretStr",
                 "x-source": "Home Assistant Database.password"
               },
               "rule": {
@@ -1480,6 +1483,7 @@
                 "help": "Optional: Home Assistant notification service entity. Used to send notifications about optimization events. Example: 'notify.mobile_app' or 'notify.persistent_notification'.",
                 "description": "HA entity for notifications",
                 "widgetFilter": "notify",
+                "refType": "EntityId",
                 "x-source": "NotificationsConfig.notification entity"
               }
             },
@@ -1508,6 +1512,7 @@
                 "help": "Optional: Home Assistant entity to update with last activity timestamp. Useful for monitoring and automations. Example: 'input_datetime.dao_last_run'.",
                 "description": "HA entity to track last activity timestamp",
                 "widgetFilter": "input_datetime,datetime,sensor",
+                "refType": "EntityId",
                 "x-source": "NotificationsConfig.last activity entity"
               }
             }
@@ -1524,6 +1529,7 @@
                 "help": "Tibber API access token. Get from Tibber app or developer portal. Use !secret for security. Required if using Tibber as price source.",
                 "description": "Tibber API token (can use !secret)",
                 "validationHint": "Use !secret for API tokens",
+                "refType": "SecretStr",
                 "x-source": "TibberConfig.api_token"
               }
             },
@@ -1592,6 +1598,7 @@
                 "help": "API key for ENTSO-E Transparency Platform. Required if source_day_ahead='entsoe'. Get free key at transparency.entsoe.eu. Use !secret for security.",
                 "description": "ENTSO-E API key (can use !secret)",
                 "validationHint": "Required for entsoe source, use !secret",
+                "refType": "SecretStr",
                 "x-source": "PricingConfig.entsoe-api-key"
               },
               "rule": {
@@ -1803,6 +1810,7 @@
                 "description": "HA entity for CO2 intensity",
                 "unit": "gCO2/kWh",
                 "widgetFilter": "sensor",
+                "refType": "EntityId",
                 "x-source": "ReportConfig.co2 intensity sensor"
               }
             },

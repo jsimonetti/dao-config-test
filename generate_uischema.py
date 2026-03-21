@@ -862,6 +862,16 @@ def main():
                     if "x-validation-hint" in prop_schema:
                         control["options"]["validationHint"] = prop_schema["x-validation-hint"]
                     
+                    # Add refType for $ref properties (for custom renderer detection)
+                    if "$ref" in prop_schema:
+                        ref_type = prop_schema["$ref"].split("/")[-1]
+                        control["options"]["refType"] = ref_type
+                    
+                    # Add itemsRefType for array properties (for EntityListPicker detection)
+                    if prop_schema.get("type") == "array" and "items" in prop_schema and "$ref" in prop_schema["items"]:
+                        items_ref_type = prop_schema["items"]["$ref"].split("/")[-1]
+                        control["options"]["itemsRefType"] = items_ref_type
+                    
                     # Add source tracking
                     control["options"]["x-source"] = f"{source_class}.{prop_name}"
                     
@@ -932,6 +942,16 @@ def main():
                     control["options"]["widgetFilter"] = prop_schema["x-ui-widget-filter"]
                 if "x-validation-hint" in prop_schema:
                     control["options"]["validationHint"] = prop_schema["x-validation-hint"]
+                
+                # Add refType for $ref properties (for custom renderer detection)
+                if "$ref" in prop_schema:
+                    ref_type = prop_schema["$ref"].split("/")[-1]
+                    control["options"]["refType"] = ref_type
+                
+                # Add itemsRefType for array properties (for EntityListPicker detection)
+                if prop_schema.get("type") == "array" and "items" in prop_schema and "$ref" in prop_schema["items"]:
+                    items_ref_type = prop_schema["items"]["$ref"].split("/")[-1]
+                    control["options"]["itemsRefType"] = items_ref_type
                 
                 # Add source tracking
                 control["options"]["x-source"] = f"{source_class}.{prop_name}"
