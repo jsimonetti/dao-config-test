@@ -2207,6 +2207,82 @@
         },
         {
           "type": "Group",
+          "label": "Graphics",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/graphical_backend",
+              "options": {
+                "description": "Matplotlib graphical backend"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/graphics/properties/style",
+              "options": {
+                "help": "Matplotlib visual style for generated graphs. 'dark_background' matches Home Assistant dark theme. Other options: 'default', 'seaborn', 'ggplot', 'bmh', 'fivethirtyeight'.",
+                "description": "Matplotlib style (e.g., 'dark_background', 'default')",
+                "x-source": "GraphicsConfig.style"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/graphics/properties/show",
+              "options": {
+                "help": "Enable graph generation and display. Graphs show optimization results, prices, battery schedules. Set to true to enable, false to disable. Can be HA entity ID.",
+                "description": "Whether to show graphics",
+                "x-source": "GraphicsConfig.show"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/graphics/properties/battery_balance",
+              "options": {
+                "help": "Display battery state of charge and power flows in graphs. Shows charge/discharge schedule over time.",
+                "description": "Show battery balance in graphs",
+                "x-source": "GraphicsConfig.battery_balance"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/graphics/properties/prices_consumption",
+              "options": {
+                "help": "Display consumption prices (market + taxes + VAT) in graphs. Helps visualize expensive vs cheap periods.",
+                "description": "Show consumption prices in graphs",
+                "x-source": "GraphicsConfig.prices_consumption"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/graphics/properties/prices_production",
+              "options": {
+                "help": "Display feed-in/production prices in graphs. Useful if you have solar feed-in to compare consumption vs production value.",
+                "description": "Show production prices in graphs",
+                "x-source": "GraphicsConfig.prices_production"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/graphics/properties/prices_spot",
+              "options": {
+                "help": "Display raw day-ahead spot market prices (before taxes/markup) in graphs. Shows pure market price variations.",
+                "description": "Show spot prices in graphs",
+                "x-source": "GraphicsConfig.prices_spot"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/graphics/properties/average_consumption",
+              "options": {
+                "help": "Display average/baseline consumption in graphs. Helps understand optimization impact relative to normal usage.",
+                "description": "Show average consumption in graphs",
+                "x-source": "GraphicsConfig.average_consumption"
+              }
+            }
+          ]
+        },
+        {
+          "type": "Group",
           "label": "History",
           "elements": [
             {
@@ -2221,82 +2297,6 @@
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "type": "Category",
-      "label": "Visualization",
-      "elements": [
-        {
-          "type": "Control",
-          "scope": "#/properties/graphical_backend",
-          "options": {
-            "description": "Matplotlib graphical backend"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/graphics/properties/style",
-          "options": {
-            "help": "Matplotlib visual style for generated graphs. 'dark_background' matches Home Assistant dark theme. Other options: 'default', 'seaborn', 'ggplot', 'bmh', 'fivethirtyeight'.",
-            "description": "Matplotlib style (e.g., 'dark_background', 'default')",
-            "x-source": "GraphicsConfig.style"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/graphics/properties/show",
-          "options": {
-            "help": "Enable graph generation and display. Graphs show optimization results, prices, battery schedules. Set to true to enable, false to disable. Can be HA entity ID.",
-            "description": "Whether to show graphics",
-            "x-source": "GraphicsConfig.show"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/graphics/properties/battery_balance",
-          "options": {
-            "help": "Display battery state of charge and power flows in graphs. Shows charge/discharge schedule over time.",
-            "description": "Show battery balance in graphs",
-            "x-source": "GraphicsConfig.battery_balance"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/graphics/properties/prices_consumption",
-          "options": {
-            "help": "Display consumption prices (market + taxes + VAT) in graphs. Helps visualize expensive vs cheap periods.",
-            "description": "Show consumption prices in graphs",
-            "x-source": "GraphicsConfig.prices_consumption"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/graphics/properties/prices_production",
-          "options": {
-            "help": "Display feed-in/production prices in graphs. Useful if you have solar feed-in to compare consumption vs production value.",
-            "description": "Show production prices in graphs",
-            "x-source": "GraphicsConfig.prices_production"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/graphics/properties/prices_spot",
-          "options": {
-            "help": "Display raw day-ahead spot market prices (before taxes/markup) in graphs. Shows pure market price variations.",
-            "description": "Show spot prices in graphs",
-            "x-source": "GraphicsConfig.prices_spot"
-          }
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/graphics/properties/average_consumption",
-          "options": {
-            "help": "Display average/baseline consumption in graphs. Helps understand optimization impact relative to normal usage.",
-            "description": "Show average consumption in graphs",
-            "x-source": "GraphicsConfig.average_consumption"
-          }
         }
       ]
     }

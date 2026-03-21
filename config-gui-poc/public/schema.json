@@ -986,7 +986,7 @@
           "title": "Style",
           "type": "string",
           "x-help": "Matplotlib visual style for generated graphs. 'dark_background' matches Home Assistant dark theme. Other options: 'default', 'seaborn', 'ggplot', 'bmh', 'fivethirtyeight'.",
-          "x-ui-section": "General"
+          "x-ui-section": "Graphics"
         },
         "show": {
           "default": false,
@@ -994,7 +994,7 @@
           "title": "Show",
           "type": "boolean",
           "x-help": "Enable graph generation and display. Graphs show optimization results, prices, battery schedules. Set to true to enable, false to disable. Can be HA entity ID.",
-          "x-ui-section": "General"
+          "x-ui-section": "Graphics"
         },
         "battery_balance": {
           "default": true,
@@ -1002,7 +1002,7 @@
           "title": "Battery Balance",
           "type": "boolean",
           "x-help": "Display battery state of charge and power flows in graphs. Shows charge/discharge schedule over time.",
-          "x-ui-section": "General"
+          "x-ui-section": "Graphics"
         },
         "prices_consumption": {
           "default": true,
@@ -1010,7 +1010,7 @@
           "title": "Prices Consumption",
           "type": "boolean",
           "x-help": "Display consumption prices (market + taxes + VAT) in graphs. Helps visualize expensive vs cheap periods.",
-          "x-ui-section": "General"
+          "x-ui-section": "Graphics"
         },
         "prices_production": {
           "default": false,
@@ -1018,7 +1018,7 @@
           "title": "Prices Production",
           "type": "boolean",
           "x-help": "Display feed-in/production prices in graphs. Useful if you have solar feed-in to compare consumption vs production value.",
-          "x-ui-section": "General"
+          "x-ui-section": "Graphics"
         },
         "prices_spot": {
           "default": true,
@@ -1026,7 +1026,7 @@
           "title": "Prices Spot",
           "type": "boolean",
           "x-help": "Display raw day-ahead spot market prices (before taxes/markup) in graphs. Shows pure market price variations.",
-          "x-ui-section": "General"
+          "x-ui-section": "Graphics"
         },
         "average_consumption": {
           "default": true,
@@ -1034,7 +1034,7 @@
           "title": "Average Consumption",
           "type": "boolean",
           "x-help": "Display average/baseline consumption in graphs. Helps understand optimization impact relative to normal usage.",
-          "x-ui-section": "General"
+          "x-ui-section": "Graphics"
         }
       },
       "title": "GraphicsConfig",
@@ -1043,7 +1043,7 @@
       "x-help": "# Graphics & Visualization\n\nConfigure graphs and visualizations of optimization results.\n\n## Graph Types\n\nGraphs can show:\n- **Battery balance**: SOC and charge/discharge schedule\n- **Prices**: Consumption, production, and spot prices\n- **Average consumption**: Baseline vs optimized usage\n\n## When to Use\n\n- Enable during testing to visualize optimization\n- Useful for understanding system behavior\n- Can be displayed in Home Assistant dashboard\n- Disable in production if graphs not needed (saves resources)\n\n## Tips\n\n- Graphs saved to add-on data directory\n- Use dark_background style to match HA theme\n- Toggle individual elements to simplify graphs\n- Graphs regenerated each optimization run\n",
       "x-icon": "chart-line",
       "x-order": 13,
-      "x-ui-group": "Visualization"
+      "x-ui-group": "Reporting"
     },
     "GridConfig": {
       "additionalProperties": true,
@@ -2489,7 +2489,8 @@
       "description": "Matplotlib graphical backend",
       "title": "Graphical Backend",
       "type": "string",
-      "x-ui-group": "Visualization",
+      "x-ui-group": "Reporting",
+      "x-ui-section": "Graphics",
       "x-validation-hint": "Leave empty for auto-detect, use 'Agg' for headless"
     },
     "graphics": {

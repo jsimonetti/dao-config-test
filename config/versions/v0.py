@@ -188,7 +188,8 @@ class ConfigurationV0(DAOConfigBaseModel):
         alias="graphical backend",
         description="Matplotlib graphical backend",
         json_schema_extra={
-            "x-ui-group": "Visualization",
+            "x-ui-group": "Reporting",
+            "x-ui-section": "Graphics",
             "x-validation-hint": "Leave empty for auto-detect, use 'Agg' for headless"
         }
     )
