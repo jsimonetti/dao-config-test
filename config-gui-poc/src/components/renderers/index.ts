@@ -13,9 +13,11 @@ import EntityPickerOrEnumRenderer, { entityPickerOrEnumTester } from './EntityPi
 import SecretPickerRenderer, { secretPickerTester } from './SecretPickerRenderer'
 import MarkdownLabelRenderer, { markdownLabelTester } from './MarkdownLabelRenderer'
 import HelpButtonRenderer, { helpButtonTester } from './HelpButtonRenderer'
+import BooleanToggleRenderer, { booleanToggleTester } from './BooleanToggleRenderer'
 import { materialRenderers } from '@jsonforms/material-renderers'
 
 export const customRenderers = [
+  { tester: booleanToggleTester, renderer: BooleanToggleRenderer },
   { tester: helpButtonTester, renderer: HelpButtonRenderer },
   { tester: markdownLabelTester, renderer: MarkdownLabelRenderer },
   { tester: entityPickerOrNumberTester, renderer: EntityPickerOrNumberRenderer },

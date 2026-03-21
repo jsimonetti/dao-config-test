@@ -145,6 +145,15 @@ def extract_x_ui_group_from_property(prop_schema: Dict[str, Any], defs: Dict[str
                 resolved_model = resolve_ref(option["$ref"], defs)
                 break
     
+    # Check in oneOf options (for discriminated unions)
+    elif "oneOf" in prop_schema:
+        for option in prop_schema["oneOf"]:
+            # Check if this option has a $ref
+            if isinstance(option, dict) and "$ref" in option:
+                resolved_model = resolve_ref(option["$ref"], defs)
+                # For discriminated unions, use the first variant's metadata
+                break
+    
     # Check in array items
     elif prop_schema.get("type") == "array" and "items" in prop_schema:
         items = prop_schema["items"]
@@ -800,9 +809,44 @@ def main():
                     source_class = ref_def.get("title", ref_name)
                     # Don't set resolved_model for union types - prevents expansion
                     break
+        elif "oneOf" in prop_schema:
+            # For discriminated unions with boolean discriminators, expand the "True" variant
+            # This treats it like a regular nested object, eliminating special handling
+            discriminator = prop_schema.get("discriminator", {})
+            discriminator_prop = discriminator.get("propertyName")
+            
+            if discriminator_prop:
+                # Find the variant where discriminator = True
+                for option in prop_schema["oneOf"]:
+                    if isinstance(option, dict) and "$ref" in option:
+                        ref_name = option["$ref"].split("/")[-1]
+                        ref_def = defs.get(ref_name, {})
+                        disc_prop_schema = ref_def.get("properties", {}).get(discriminator_prop, {})
+                        
+                        # Check if this is the "enabled" variant (const: true)
+                        if disc_prop_schema.get("const") == True:
+                            source_class = ref_def.get("title", ref_name)
+                            resolved_model = ref_def
+                            # NOT a union type - we want to expand it
+                            is_union_type = False
+                            break
+                        # If this is the "disabled" variant, still get source_class but mark as union
+                        elif disc_prop_schema.get("const") == False:
+                            if source_class is None:  # Only set if we haven't found True variant
+                                source_class = ref_def.get("title", ref_name)
+                            is_union_type = True
+            else:
+                # oneOf without discriminator - treat as union type
+                is_union_type = True
+                for option in prop_schema["oneOf"]:
+                    if isinstance(option, dict) and "$ref" in option:
+                        ref_name = option["$ref"].split("/")[-1]
+                        ref_def = defs.get(ref_name, {})
+                        source_class = ref_def.get("title", ref_name)
+                        break
         
         # Check if this is a nested object that should be expanded
-        # Skip union types (anyOf) - they should be rendered as single controls
+        # Skip union types (anyOf, oneOf) - they should be rendered as single controls
         if resolved_model and "properties" in resolved_model and not is_union_type:
             # This is a nested object - expand its fields and add them to groups
             nested_class = resolved_model.get("title", prop_name)
@@ -833,6 +877,9 @@ def main():
     category_metadata = {}
     
     for group_name, props_list in groups.items():
+        # Sort by order to prioritize lower-order items for metadata extraction
+        props_list.sort(key=lambda x: x[0])
+        
         # Find the first model in this group that defines x-icon or x-docs-url
         for order, prop_name, prop_schema, source_class, parent_prop_name, parent_section in props_list:
             # Try to resolve the model definition
@@ -844,6 +891,12 @@ def main():
                 for option in prop_schema["anyOf"]:
                     if isinstance(option, dict) and option.get("type") != "null" and "$ref" in option:
                         resolved_model = resolve_ref(option["$ref"], defs)
+                        break
+            elif "oneOf" in prop_schema:
+                for option in prop_schema["oneOf"]:
+                    if isinstance(option, dict) and "$ref" in option:
+                        resolved_model = resolve_ref(option["$ref"], defs)
+                        # For discriminated unions, use first variant's metadata
                         break
             elif prop_schema.get("type") == "array" and "items" in prop_schema and "$ref" in prop_schema["items"]:
                 resolved_model = resolve_ref(prop_schema["items"]["$ref"], defs)
@@ -977,6 +1030,12 @@ def main():
                     control["options"]["widgetFilter"] = prop_schema["x-ui-widget-filter"]
                 if "x-validation-hint" in prop_schema:
                     control["options"]["validationHint"] = prop_schema["x-validation-hint"]
+                
+                # Check if this is a discriminator field (has const: true/false)
+                # These should render as toggle switches, not text fields
+                if "const" in prop_schema and isinstance(prop_schema["const"], bool):
+                    control["options"]["format"] = "boolean"
+                    control["options"]["toggle"] = True
                 
                 # Add refType for $ref properties (for custom renderer detection)
                 if "$ref" in prop_schema:

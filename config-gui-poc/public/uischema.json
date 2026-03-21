@@ -32,6 +32,17 @@
                 "x-source": "FlexEnum.strategy",
                 "help": "Select from predefined values or use Home Assistant entity ID. Entity IDs are always valid."
               }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/max_gap",
+              "options": {
+                "help": "Maximum acceptable absolute gap for the MIP solver. Smaller values give more accurate results but take longer. Valid range: 0.00001\u20131.0. Default 0.005 euro.",
+                "description": "Maximum MIP gap (absolute) for the optimizer",
+                "unit": "euro",
+                "refType": "FlexFloat",
+                "x-source": "FlexFloat.max_gap"
+              }
             }
           ]
         },
@@ -112,6 +123,39 @@
                   "scope": "#/properties/use_calc_baseload"
                 },
                 "effect": "HIDE"
+              }
+            }
+          ]
+        },
+        {
+          "type": "Group",
+          "label": "ML Learning",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/xgboost/properties/tune_hyperparameters",
+              "options": {
+                "help": "When enabled, the predictor performs a grid search over 'param_grid' to select the best XGBoost hyper-parameters. Increases training time significantly.",
+                "description": "Run GridSearchCV to find optimal hyper-parameters before training",
+                "x-source": "XGBoostConfig.tune_hyperparameters"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/xgboost/properties/param_grid",
+              "options": {
+                "help": "Free-form dict passed directly to sklearn GridSearchCV. Example: {\"n_estimators\": [100, 200], \"max_depth\": [3, 6]}. Leave empty to use the built-in defaults.",
+                "description": "Grid of hyper-parameters for GridSearchCV. Keys are XGBoost parameter names, values are lists of candidates.",
+                "x-source": "XGBoostConfig.param_grid"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/xgboost/properties/parameters",
+              "options": {
+                "help": "Free-form dict of XGBoost parameters used when tune_hyperparameters is disabled. Example: {\"n_estimators\": 200, \"max_depth\": 6, \"learning_rate\": 0.1}. Leave empty to use the built-in defaults.",
+                "description": "Fixed hyper-parameters used when tune_hyperparameters is false. Keys are XGBoost parameter names.",
+                "x-source": "XGBoostConfig.parameters"
               }
             }
           ]
@@ -1112,59 +1156,371 @@
     },
     {
       "type": "Category",
-      "label": "General",
+      "label": "Heating",
       "elements": [
         {
-          "type": "Control",
-          "scope": "#/properties/max_gap",
-          "options": {
-            "help": "Maximum acceptable absolute gap for the MIP solver. Smaller values give more accurate results but take longer. Valid range: 0.00001\u20131.0. Default 0.005 euro.",
-            "description": "Maximum MIP gap (absolute) for the optimizer",
-            "unit": "euro",
-            "refType": "FlexFloat",
-            "x-source": "FlexFloat.max_gap"
-          }
+          "type": "Group",
+          "label": "Boiler",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/boiler_present",
+              "options": {
+                "help": "Enable hot water boiler optimization. Set to true to include boiler in optimization, false to disable.",
+                "description": "Whether boiler is present/enabled",
+                "format": "boolean",
+                "toggle": true,
+                "x-source": "BoilerConfig.boiler_present"
+              }
+            }
+          ]
         },
         {
-          "type": "Control",
-          "scope": "#/properties/boiler",
-          "options": {
-            "description": "Hot water boiler configuration"
-          }
+          "type": "Group",
+          "label": "Configuration",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/entity_setpoint",
+              "options": {
+                "help": "Home Assistant entity for target water temperature. System will heat water to this temperature. Typical: 55-65\u00b0C for domestic hot water.",
+                "description": "HA entity for temperature setpoint",
+                "unit": "\u00b0C",
+                "widgetFilter": "input_number,number,sensor",
+                "refType": "EntityId",
+                "x-source": "BoilerConfig.entity_setpoint"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/entity_hysterese",
+              "options": {
+                "help": "Home Assistant entity for temperature hysteresis in \u00b0C. Prevents excessive cycling. If setpoint=60\u00b0C and hysteresis=5\u00b0C, heating starts at 55\u00b0C.",
+                "description": "HA entity for temperature hysteresis",
+                "unit": "\u00b0C",
+                "widgetFilter": "input_number,number,sensor",
+                "refType": "EntityId",
+                "x-source": "BoilerConfig.entity_hysterese"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/heating_allowed_below",
+              "options": {
+                "help": "Maximum temperature for starting heating cycle. Heating only occurs when water is below this temperature. Typically same as or slightly above setpoint.",
+                "description": "Temperature below which heating is allowed",
+                "unit": "\u00b0C",
+                "validationHint": "Should be >= setpoint",
+                "x-source": "BoilerConfig.heating_allowed_below"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/boiler_heated_by_heatpump",
+              "options": {
+                "help": "Set to true if the boiler is heated by a heat pump (COP > 1). Set to false for direct electric resistive heating. Affects optimization calculations.",
+                "description": "Whether the boiler is heated by a heat pump",
+                "x-source": "BoilerConfig.boiler_heated_by_heatpump"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/degree_days_factor",
+              "options": {
+                "help": "Multiplier for degree-day heat demand calculation. Adjust based on building insulation and heat loss. Higher = more heat needed. Typical: 0.5-2.0.",
+                "description": "Degree days factor for heat demand calculation",
+                "unit": "factor",
+                "validationHint": "Must be > 0, typically 0.5-2.0",
+                "refType": "FlexFloat",
+                "x-source": "HeatingConfig.degree_days_factor"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/adjustment",
+              "options": {
+                "help": "Heat pump control mode: 'on/off' = simple binary control, 'power' = variable power control, 'heating curve' = adjust heating curve based on weather.",
+                "description": "Adjustment mode",
+                "x-source": "HeatingConfig.adjustment"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/adjustment_factor",
+              "options": {
+                "help": "Optional: Multiplier for heating curve adjustments. Higher values = more aggressive adjustments. Typical: 0.5-2.0.",
+                "description": "Factor for heating curve adjustment",
+                "unit": "factor",
+                "validationHint": "Typically 0.5-2.0 if specified",
+                "x-source": "HeatingConfig.adjustment_factor"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/min_run_length",
+              "options": {
+                "help": "Minimum number of consecutive time intervals heat pump must run once started. Prevents excessive on/off cycling which reduces efficiency and equipment life. Typical: 2-4 intervals (2-4 hours).",
+                "description": "Minimum run length in time intervals",
+                "unit": "intervals",
+                "validationHint": "Must be >= 1, typically 2-4 for 1h intervals",
+                "x-source": "HeatingConfig.min_run_length"
+              }
+            }
+          ]
         },
         {
-          "type": "Control",
-          "scope": "#/properties/heating",
-          "options": {
-            "description": "Heating system / heat pump configuration"
-          }
+          "type": "Group",
+          "label": "Controls",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/entity_instant_start",
+              "options": {
+                "help": "Optional: Home Assistant entity to trigger immediate boiler heating. Overrides optimized schedule for on-demand hot water.",
+                "description": "HA entity for instant start",
+                "widgetFilter": "switch,input_boolean,button",
+                "refType": "EntityId",
+                "x-source": "BoilerConfig.entity_instant_start"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/activate_service",
+              "options": {
+                "help": "Home Assistant service type to trigger boiler heating. Use 'press' for button entities, 'switch' for switch entities, or custom service names.",
+                "description": "Service type to activate boiler (e.g., 'press', 'switch')",
+                "x-source": "BoilerConfig.activate_service"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/activate_entity",
+              "options": {
+                "help": "Home Assistant entity used to activate boiler heating. System will trigger this entity using activate_service when heating is needed.",
+                "description": "HA entity to activate boiler",
+                "widgetFilter": "button,switch",
+                "refType": "EntityId",
+                "x-source": "BoilerConfig.activate_entity"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/switch_entity",
+              "options": {
+                "help": "Optional: Home Assistant switch entity to directly control boiler power. Alternative to activate_entity for simple on/off control.",
+                "description": "HA entity to switch boiler on/off",
+                "widgetFilter": "switch",
+                "refType": "EntityId",
+                "x-source": "BoilerConfig.switch_entity"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/entity_adjust_heating_curve",
+              "options": {
+                "help": "Optional: Home Assistant entity to adjust heating curve. Used when adjustment mode is 'heating curve'. Controls water temperature based on outdoor temperature.",
+                "description": "HA entity to adjust heating curve",
+                "widgetFilter": "number,input_number",
+                "refType": "EntityId",
+                "x-source": "HeatingConfig.entity_adjust_heating_curve"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/entity_hp_switch",
+              "options": {
+                "help": "Optional: Home Assistant switch to control heat pump on/off. Used by scheduler to execute optimized heating schedule.",
+                "description": "HA entity to control heat pump on/off",
+                "widgetFilter": "switch",
+                "refType": "EntityId",
+                "x-source": "HeatingConfig.entity_hp_switch"
+              }
+            }
+          ]
         },
         {
-          "type": "Control",
-          "scope": "#/properties/xgboost/properties/tune_hyperparameters",
-          "options": {
-            "help": "When enabled, the predictor performs a grid search over 'param_grid' to select the best XGBoost hyper-parameters. Increases training time significantly.",
-            "description": "Run GridSearchCV to find optimal hyper-parameters before training",
-            "x-source": "XGBoostConfig.tune_hyperparameters"
-          }
+          "type": "Group",
+          "label": "Heating",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/heater_present",
+              "options": {
+                "help": "Enable heating system optimization. Set to true to include heat pump in optimization, false to disable. Can also be HA entity ID for dynamic control.",
+                "description": "Whether heating system is present/enabled",
+                "format": "boolean",
+                "toggle": true,
+                "x-source": "HeatingConfig.heater_present"
+              }
+            }
+          ]
         },
         {
-          "type": "Control",
-          "scope": "#/properties/xgboost/properties/param_grid",
-          "options": {
-            "help": "Free-form dict passed directly to sklearn GridSearchCV. Example: {\"n_estimators\": [100, 200], \"max_depth\": [3, 6]}. Leave empty to use the built-in defaults.",
-            "description": "Grid of hyper-parameters for GridSearchCV. Keys are XGBoost parameter names, values are lists of candidates.",
-            "x-source": "XGBoostConfig.param_grid"
-          }
+          "type": "Group",
+          "label": "Physical Properties",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/cop",
+              "options": {
+                "help": "Coefficient of Performance if using heat pump water heater. For resistive heating element, use 1.0. For heat pump water heater, typically 2.5-4.0.",
+                "description": "Coefficient of Performance",
+                "unit": "ratio",
+                "validationHint": "Must be > 0, use 1.0 for resistive, 2.5-4.0 for heat pump",
+                "x-source": "BoilerConfig.cop"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/cooling_rate",
+              "options": {
+                "help": "Rate at which water temperature drops when not heating, in \u00b0C per hour. Depends on insulation quality. Typical: 0.5-2.0\u00b0C/h for well-insulated boilers.",
+                "description": "Cooling rate in degrees per hour",
+                "unit": "\u00b0C/h",
+                "validationHint": "Must be >= 0, typically 0.5-2.0\u00b0C/h",
+                "x-source": "BoilerConfig.cooling_rate"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/volume",
+              "options": {
+                "help": "Hot water tank volume in liters. Affects thermal inertia and heating time. Typical residential: 100-300 liters.",
+                "description": "Water volume in liters",
+                "unit": "L",
+                "validationHint": "Must be > 0, typically 100-300L",
+                "x-source": "BoilerConfig.volume"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/elec_power",
+              "options": {
+                "help": "Electrical power consumption of heating element or heat pump compressor in watts. Typical: 1000-3000W for resistive, 400-800W for heat pump water heater.",
+                "description": "Electrical power in watts",
+                "unit": "W",
+                "validationHint": "Must be > 0, typically 1000-3000W",
+                "x-source": "BoilerConfig.elec_power"
+              }
+            }
+          ]
         },
         {
-          "type": "Control",
-          "scope": "#/properties/xgboost/properties/parameters",
-          "options": {
-            "help": "Free-form dict of XGBoost parameters used when tune_hyperparameters is disabled. Example: {\"n_estimators\": 200, \"max_depth\": 6, \"learning_rate\": 0.1}. Leave empty to use the built-in defaults.",
-            "description": "Fixed hyper-parameters used when tune_hyperparameters is false. Keys are XGBoost parameter names.",
-            "x-source": "XGBoostConfig.parameters"
-          }
+          "type": "Group",
+          "label": "Power Stages",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/stages",
+              "options": {
+                "help": "Power and efficiency stages for heat pump. At least one stage required. Multiple stages model variable-speed compressors. Must be sorted by power ascending.",
+                "description": "Heating power/COP stages",
+                "validationHint": "At least 1 stage, must be sorted by max_power",
+                "itemsRefType": "HeatingStage",
+                "x-source": "HeatingConfig.stages"
+              }
+            }
+          ]
+        },
+        {
+          "type": "Group",
+          "label": "Sensors",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/entity_actual_temp",
+              "options": {
+                "help": "Home Assistant sensor showing current hot water temperature in \u00b0C. Required for thermal state tracking and heating decisions.",
+                "description": "HA entity for actual water temperature",
+                "unit": "\u00b0C",
+                "widgetFilter": "sensor",
+                "refType": "EntityId",
+                "x-source": "BoilerConfig.entity_actual_temp"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/boiler/properties/entity_enabled",
+              "options": {
+                "help": "Optional: Home Assistant binary sensor indicating if boiler is enabled. System will only optimize when boiler is enabled.",
+                "description": "HA entity for boiler enabled status",
+                "widgetFilter": "binary_sensor",
+                "refType": "EntityId",
+                "x-source": "BoilerConfig.entity_enabled"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/entity_hp_enabled",
+              "options": {
+                "help": "Optional: Home Assistant binary sensor indicating if heat pump is enabled and operational. System will only optimize when enabled.",
+                "description": "HA binary sensor for heat pump enabled status",
+                "widgetFilter": "binary_sensor",
+                "refType": "EntityId",
+                "x-source": "HeatingConfig.entity_hp_enabled"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/entity_heat_produced",
+              "options": {
+                "help": "Optional: Home Assistant sensor showing total heat energy produced. Used for monitoring and validation.",
+                "description": "HA entity for heat produced",
+                "unit": "kWh",
+                "widgetFilter": "sensor",
+                "refType": "EntityId",
+                "x-source": "HeatingConfig.entity_heat_produced"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/entity_hp_heat_demand",
+              "options": {
+                "help": "Optional: Home Assistant sensor showing current heat demand. Can be used instead of degree-day calculation for more accurate demand forecasting.",
+                "description": "HA entity for heat demand",
+                "unit": "W",
+                "widgetFilter": "sensor",
+                "refType": "EntityId",
+                "x-source": "HeatingConfig.entity_hp_heat_demand"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/entity_avg_temp",
+              "options": {
+                "help": "Optional: Home Assistant sensor for outdoor average temperature. Used for degree-day calculations and COP adjustments.",
+                "description": "HA entity for average temperature",
+                "unit": "\u00b0C",
+                "widgetFilter": "sensor",
+                "refType": "EntityId",
+                "x-source": "HeatingConfig.entity_avg_temp"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/entity_hp_cop",
+              "options": {
+                "help": "Optional: Home Assistant sensor showing current COP. Can be used for monitoring or to override stage-based COP calculations.",
+                "description": "HA entity for heat pump COP",
+                "unit": "ratio",
+                "widgetFilter": "sensor",
+                "refType": "EntityId",
+                "x-source": "HeatingConfig.entity_hp_cop"
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/heating/properties/entity_hp_power",
+              "options": {
+                "help": "Optional: Home Assistant sensor showing current electrical power consumption. Used for monitoring and validation.",
+                "description": "HA entity for heat pump power",
+                "unit": "W",
+                "widgetFilter": "sensor",
+                "refType": "EntityId",
+                "x-source": "HeatingConfig.entity_hp_power"
+              }
+            }
+          ]
         }
       ]
     },

@@ -390,14 +390,14 @@
           "description": "Whether boiler is present/enabled",
           "title": "Boiler Present",
           "type": "boolean",
-          "x-help": "Enable hot water boiler optimization. Set to true to include boiler in optimization, false to disable. Can also be HA entity ID for dynamic control.",
+          "x-help": "Enable hot water boiler optimization. Set to true to include boiler in optimization, false to disable.",
           "x-ui-section": "General"
         },
         "entity_actual_temp": {
           "$ref": "#/$defs/EntityId",
           "description": "HA entity for actual water temperature",
           "x-help": "Home Assistant sensor showing current hot water temperature in \u00b0C. Required for thermal state tracking and heating decisions.",
-          "x-ui-section": "General",
+          "x-ui-section": "Sensors",
           "x-ui-widget-filter": "sensor",
           "x-unit": "\u00b0C"
         },
@@ -405,7 +405,7 @@
           "$ref": "#/$defs/EntityId",
           "description": "HA entity for temperature setpoint",
           "x-help": "Home Assistant entity for target water temperature. System will heat water to this temperature. Typical: 55-65\u00b0C for domestic hot water.",
-          "x-ui-section": "General",
+          "x-ui-section": "Configuration",
           "x-ui-widget-filter": "input_number,number,sensor",
           "x-unit": "\u00b0C"
         },
@@ -413,7 +413,7 @@
           "$ref": "#/$defs/EntityId",
           "description": "HA entity for temperature hysteresis",
           "x-help": "Home Assistant entity for temperature hysteresis in \u00b0C. Prevents excessive cycling. If setpoint=60\u00b0C and hysteresis=5\u00b0C, heating starts at 55\u00b0C.",
-          "x-ui-section": "General",
+          "x-ui-section": "Configuration",
           "x-ui-widget-filter": "input_number,number,sensor",
           "x-unit": "\u00b0C"
         },
@@ -421,7 +421,7 @@
           "default": null,
           "description": "HA entity for boiler enabled status",
           "x-help": "Optional: Home Assistant binary sensor indicating if boiler is enabled. System will only optimize when boiler is enabled.",
-          "x-ui-section": "General",
+          "x-ui-section": "Sensors",
           "x-ui-widget-filter": "binary_sensor",
           "$ref": "#/$defs/EntityId"
         },
@@ -429,7 +429,7 @@
           "default": null,
           "description": "HA entity for instant start",
           "x-help": "Optional: Home Assistant entity to trigger immediate boiler heating. Overrides optimized schedule for on-demand hot water.",
-          "x-ui-section": "General",
+          "x-ui-section": "Controls",
           "x-ui-widget-filter": "switch,input_boolean,button",
           "$ref": "#/$defs/EntityId"
         },
@@ -440,7 +440,7 @@
           "title": "Cop",
           "type": "number",
           "x-help": "Coefficient of Performance if using heat pump water heater. For resistive heating element, use 1.0. For heat pump water heater, typically 2.5-4.0.",
-          "x-ui-section": "General",
+          "x-ui-section": "Physical Properties",
           "x-unit": "ratio",
           "x-validation-hint": "Must be > 0, use 1.0 for resistive, 2.5-4.0 for heat pump"
         },
@@ -450,7 +450,7 @@
           "title": "Cooling Rate",
           "type": "number",
           "x-help": "Rate at which water temperature drops when not heating, in \u00b0C per hour. Depends on insulation quality. Typical: 0.5-2.0\u00b0C/h for well-insulated boilers.",
-          "x-ui-section": "General",
+          "x-ui-section": "Physical Properties",
           "x-unit": "\u00b0C/h",
           "x-validation-hint": "Must be >= 0, typically 0.5-2.0\u00b0C/h"
         },
@@ -461,7 +461,7 @@
           "title": "Volume",
           "type": "number",
           "x-help": "Hot water tank volume in liters. Affects thermal inertia and heating time. Typical residential: 100-300 liters.",
-          "x-ui-section": "General",
+          "x-ui-section": "Physical Properties",
           "x-unit": "L",
           "x-validation-hint": "Must be > 0, typically 100-300L"
         },
@@ -470,7 +470,7 @@
           "title": "Heating Allowed Below",
           "type": "number",
           "x-help": "Maximum temperature for starting heating cycle. Heating only occurs when water is below this temperature. Typically same as or slightly above setpoint.",
-          "x-ui-section": "General",
+          "x-ui-section": "Configuration",
           "x-unit": "\u00b0C",
           "x-validation-hint": "Should be >= setpoint"
         },
@@ -481,7 +481,7 @@
           "title": "Elec Power",
           "type": "number",
           "x-help": "Electrical power consumption of heating element or heat pump compressor in watts. Typical: 1000-3000W for resistive, 400-800W for heat pump water heater.",
-          "x-ui-section": "General",
+          "x-ui-section": "Physical Properties",
           "x-unit": "W",
           "x-validation-hint": "Must be > 0, typically 1000-3000W"
         },
@@ -490,14 +490,14 @@
           "description": "Service type to activate boiler (e.g., 'press', 'switch')",
           "title": "Activate Service",
           "x-help": "Home Assistant service type to trigger boiler heating. Use 'press' for button entities, 'switch' for switch entities, or custom service names.",
-          "x-ui-section": "General",
+          "x-ui-section": "Controls",
           "type": "string"
         },
         "activate_entity": {
           "default": null,
           "description": "HA entity to activate boiler",
           "x-help": "Home Assistant entity used to activate boiler heating. System will trigger this entity using activate_service when heating is needed.",
-          "x-ui-section": "General",
+          "x-ui-section": "Controls",
           "x-ui-widget-filter": "button,switch",
           "$ref": "#/$defs/EntityId"
         },
@@ -507,13 +507,13 @@
           "title": "Boiler Heated By Heatpump",
           "type": "boolean",
           "x-help": "Set to true if the boiler is heated by a heat pump (COP > 1). Set to false for direct electric resistive heating. Affects optimization calculations.",
-          "x-ui-section": "General"
+          "x-ui-section": "Configuration"
         },
         "switch_entity": {
           "default": null,
           "description": "HA entity to switch boiler on/off",
           "x-help": "Optional: Home Assistant switch entity to directly control boiler power. Alternative to activate_entity for simple on/off control.",
-          "x-ui-section": "General",
+          "x-ui-section": "Controls",
           "x-ui-widget-filter": "switch",
           "$ref": "#/$defs/EntityId"
         }
@@ -531,7 +531,8 @@
       "x-help": "# Hot Water Boiler Configuration\n\nOptimize hot water heating based on electricity prices, usage patterns, and thermal characteristics.\n\n## How It Works\n\nThe system models boiler as a thermal battery:\n- Water stores heat energy based on volume and temperature\n- Heat is lost over time based on cooling_rate\n- System schedules heating during cheap electricity periods\n- Ensures hot water availability when needed\n\n## Key Parameters\n\n### Temperature Control\n- **setpoint**: Target temperature (typically 55-65\u00b0C)\n- **hysterese**: Dead band to prevent cycling (typically 3-5\u00b0C)\n- **heating_allowed_below**: Max temp to start heating\n\n### Physical Properties\n- **volume**: Tank size affects how much heat can be stored\n- **cooling_rate**: Heat loss rate (better insulation = lower rate)\n- **elec_power**: Heating power affects heating duration\n- **cop**: Efficiency (1.0 for resistive, 2.5-4.0 for heat pump)\n\n### Activation\n- **activate_entity**: Button/switch to trigger heating\n- **activate_service**: Service type ('press' or 'switch')\n\n## Tips\n- Larger volume = more thermal storage capacity\n- Better insulation = lower cooling_rate = more flexibility\n- Heat pump water heaters (COP > 1.0) much more efficient than resistive\n- Schedule heating during solar production or cheap grid periods\n- Instant start available for emergency hot water needs\n",
       "x-icon": "water-boiler",
       "x-order": 5,
-      "x-ui-group": "Heating"
+      "x-ui-group": "Heating",
+      "x-ui-section": "Boiler"
     },
     "DashboardConfig": {
       "additionalProperties": true,
@@ -1260,7 +1261,7 @@
           "default": null,
           "description": "HA binary sensor for heat pump enabled status",
           "x-help": "Optional: Home Assistant binary sensor indicating if heat pump is enabled and operational. System will only optimize when enabled.",
-          "x-ui-section": "General",
+          "x-ui-section": "Sensors",
           "x-ui-widget-filter": "binary_sensor",
           "$ref": "#/$defs/EntityId"
         },
@@ -1269,7 +1270,7 @@
           "default": 1.0,
           "description": "Degree days factor for heat demand calculation",
           "x-help": "Multiplier for degree-day heat demand calculation. Adjust based on building insulation and heat loss. Higher = more heat needed. Typical: 0.5-2.0.",
-          "x-ui-section": "General",
+          "x-ui-section": "Configuration",
           "x-unit": "factor",
           "x-validation-hint": "Must be > 0, typically 0.5-2.0"
         },
@@ -1284,7 +1285,7 @@
           "title": "Adjustment",
           "type": "string",
           "x-help": "Heat pump control mode: 'on/off' = simple binary control, 'power' = variable power control, 'heating curve' = adjust heating curve based on weather.",
-          "x-ui-section": "General"
+          "x-ui-section": "Configuration"
         },
         "stages": {
           "description": "Heating power/COP stages",
@@ -1295,14 +1296,14 @@
           "title": "Stages",
           "type": "array",
           "x-help": "Power and efficiency stages for heat pump. At least one stage required. Multiple stages model variable-speed compressors. Must be sorted by power ascending.",
-          "x-ui-section": "General",
+          "x-ui-section": "Power Stages",
           "x-validation-hint": "At least 1 stage, must be sorted by max_power"
         },
         "entity_adjust_heating_curve": {
           "default": null,
           "description": "HA entity to adjust heating curve",
           "x-help": "Optional: Home Assistant entity to adjust heating curve. Used when adjustment mode is 'heating curve'. Controls water temperature based on outdoor temperature.",
-          "x-ui-section": "General",
+          "x-ui-section": "Controls",
           "x-ui-widget-filter": "number,input_number",
           "$ref": "#/$defs/EntityId"
         },
@@ -1311,7 +1312,7 @@
           "description": "Factor for heating curve adjustment",
           "title": "Adjustment Factor",
           "x-help": "Optional: Multiplier for heating curve adjustments. Higher values = more aggressive adjustments. Typical: 0.5-2.0.",
-          "x-ui-section": "General",
+          "x-ui-section": "Configuration",
           "x-unit": "factor",
           "x-validation-hint": "Typically 0.5-2.0 if specified",
           "type": "number"
@@ -1323,7 +1324,7 @@
           "title": "Min Run Length",
           "type": "integer",
           "x-help": "Minimum number of consecutive time intervals heat pump must run once started. Prevents excessive on/off cycling which reduces efficiency and equipment life. Typical: 2-4 intervals (2-4 hours).",
-          "x-ui-section": "General",
+          "x-ui-section": "Configuration",
           "x-unit": "intervals",
           "x-validation-hint": "Must be >= 1, typically 2-4 for 1h intervals"
         },
@@ -1331,7 +1332,7 @@
           "default": null,
           "description": "HA entity for heat produced",
           "x-help": "Optional: Home Assistant sensor showing total heat energy produced. Used for monitoring and validation.",
-          "x-ui-section": "General",
+          "x-ui-section": "Sensors",
           "x-ui-widget-filter": "sensor",
           "x-unit": "kWh",
           "$ref": "#/$defs/EntityId"
@@ -1340,7 +1341,7 @@
           "default": null,
           "description": "HA entity for heat demand",
           "x-help": "Optional: Home Assistant sensor showing current heat demand. Can be used instead of degree-day calculation for more accurate demand forecasting.",
-          "x-ui-section": "General",
+          "x-ui-section": "Sensors",
           "x-ui-widget-filter": "sensor",
           "x-unit": "W",
           "$ref": "#/$defs/EntityId"
@@ -1349,7 +1350,7 @@
           "default": null,
           "description": "HA entity for average temperature",
           "x-help": "Optional: Home Assistant sensor for outdoor average temperature. Used for degree-day calculations and COP adjustments.",
-          "x-ui-section": "General",
+          "x-ui-section": "Sensors",
           "x-ui-widget-filter": "sensor",
           "x-unit": "\u00b0C",
           "$ref": "#/$defs/EntityId"
@@ -1358,7 +1359,7 @@
           "default": null,
           "description": "HA entity for heat pump COP",
           "x-help": "Optional: Home Assistant sensor showing current COP. Can be used for monitoring or to override stage-based COP calculations.",
-          "x-ui-section": "General",
+          "x-ui-section": "Sensors",
           "x-ui-widget-filter": "sensor",
           "x-unit": "ratio",
           "$ref": "#/$defs/EntityId"
@@ -1367,7 +1368,7 @@
           "default": null,
           "description": "HA entity for heat pump power",
           "x-help": "Optional: Home Assistant sensor showing current electrical power consumption. Used for monitoring and validation.",
-          "x-ui-section": "General",
+          "x-ui-section": "Sensors",
           "x-ui-widget-filter": "sensor",
           "x-unit": "W",
           "$ref": "#/$defs/EntityId"
@@ -1376,7 +1377,7 @@
           "default": null,
           "description": "HA entity to control heat pump on/off",
           "x-help": "Optional: Home Assistant switch to control heat pump on/off. Used by scheduler to execute optimized heating schedule.",
-          "x-ui-section": "General",
+          "x-ui-section": "Controls",
           "x-ui-widget-filter": "switch",
           "$ref": "#/$defs/EntityId"
         }
@@ -1390,7 +1391,8 @@
       "x-help": "# Heat Pump Configuration\n\nOptimize heat pump operation based on electricity prices, heat demand, and weather conditions.\n\n## Key Concepts\n\n### COP (Coefficient of Performance)\nRatio of heat output to electrical input. Higher is better:\n- COP 3.0 = 3 kW heat from 1 kW electricity (300% efficient)\n- COP 4.0 = 4 kW heat from 1 kW electricity (400% efficient)\n- Varies with outdoor temperature and power level\n\n### Adjustment Modes\n- **on/off**: Simple binary control (least flexible)\n- **power**: Variable power control (recommended for variable-speed pumps)\n- **heating curve**: Adjust water temperature based on outdoor temp (most advanced)\n\n### Stages\nDefine power levels and corresponding COP values:\n- Single stage: Fixed power heat pump\n- Multiple stages: Variable-speed compressor with better efficiency\n- Must be sorted by power (ascending)\n\n## Tips\n- Use degree_days_factor to calibrate heat demand for your building\n- Set min_run_length to prevent excessive cycling (2-4h typical)\n- Higher COP = cheaper heating, maximize runtime during high-COP conditions\n- Consider solar production when scheduling heating loads\n",
       "x-icon": "heat-pump",
       "x-order": 4,
-      "x-ui-group": "Heating"
+      "x-ui-group": "Heating",
+      "x-ui-section": "Heating"
     },
     "HeatingStage": {
       "additionalProperties": true,
@@ -2300,13 +2302,17 @@
           "description": "Run GridSearchCV to find optimal hyper-parameters before training",
           "title": "Tune Hyperparameters",
           "type": "boolean",
-          "x-help": "When enabled, the predictor performs a grid search over 'param_grid' to select the best XGBoost hyper-parameters. Increases training time significantly."
+          "x-help": "When enabled, the predictor performs a grid search over 'param_grid' to select the best XGBoost hyper-parameters. Increases training time significantly.",
+          "x-ui-group": "DAO",
+          "x-ui-section": "ML Learning"
         },
         "param_grid": {
           "default": null,
           "description": "Grid of hyper-parameters for GridSearchCV. Keys are XGBoost parameter names, values are lists of candidates.",
           "title": "Param Grid",
           "x-help": "Free-form dict passed directly to sklearn GridSearchCV. Example: {\"n_estimators\": [100, 200], \"max_depth\": [3, 6]}. Leave empty to use the built-in defaults.",
+          "x-ui-group": "DAO",
+          "x-ui-section": "ML Learning",
           "additionalProperties": true,
           "type": "object"
         },
@@ -2315,6 +2321,8 @@
           "description": "Fixed hyper-parameters used when tune_hyperparameters is false. Keys are XGBoost parameter names.",
           "title": "Parameters",
           "x-help": "Free-form dict of XGBoost parameters used when tune_hyperparameters is disabled. Example: {\"n_estimators\": 200, \"max_depth\": 6, \"learning_rate\": 0.1}. Leave empty to use the built-in defaults.",
+          "x-ui-group": "DAO",
+          "x-ui-section": "ML Learning",
           "additionalProperties": true,
           "type": "object"
         }
@@ -2522,6 +2530,9 @@
       "default": 0.005,
       "description": "Maximum MIP gap (absolute) for the optimizer",
       "x-help": "Maximum acceptable absolute gap for the MIP solver. Smaller values give more accurate results but take longer. Valid range: 0.00001\u20131.0. Default 0.005 euro.",
+      "x-order": 3,
+      "x-ui-group": "DAO",
+      "x-ui-section": "Optimization",
       "x-unit": "euro",
       "x-validation-hint": "Must be > 0"
     },
