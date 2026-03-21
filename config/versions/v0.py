@@ -220,7 +220,7 @@ class ConfigurationV0(DAOConfigBaseModel):
             "x-ui-section": "Optimization",
             "x-order": 2,
             "x-validation-hint": "'minimize cost' or 'minimize consumption', or HA entity ID",
-            "x-enum-values": ["minimize cost", "minimize consumption"]
+            "x-ui-widget-filter": "input_select,select,sensor"
         }
     )
     max_gap: FlexFloat = Field(

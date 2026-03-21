@@ -23,6 +23,7 @@
               "scope": "#/properties/strategy",
               "options": {
                 "description": "Optimization strategy (or HA entity ID returning the strategy string)",
+                "widgetFilter": "input_select",
                 "enumValues": [
                   "minimize cost",
                   "minimize consumption"
