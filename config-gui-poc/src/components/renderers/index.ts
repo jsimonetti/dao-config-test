@@ -9,6 +9,7 @@ import EntityPickerRenderer, { entityPickerTester } from './EntityPickerRenderer
 import EntityListPickerRenderer, { entityListPickerTester } from './EntityListPickerRenderer'
 import EntityPickerOrBooleanRenderer, { entityPickerOrBooleanTester } from './EntityPickerOrBooleanRenderer'
 import EntityPickerOrStringRenderer, { entityPickerOrStringTester } from './EntityPickerOrStringRenderer'
+import EntityPickerOrEnumRenderer, { entityPickerOrEnumTester } from './EntityPickerOrEnumRenderer'
 import SecretPickerRenderer, { secretPickerTester } from './SecretPickerRenderer'
 import MarkdownLabelRenderer, { markdownLabelTester } from './MarkdownLabelRenderer'
 import HelpButtonRenderer, { helpButtonTester } from './HelpButtonRenderer'
@@ -22,6 +23,7 @@ export const customRenderers = [
   { tester: entityListPickerTester, renderer: EntityListPickerRenderer },
   { tester: entityPickerOrBooleanTester, renderer: EntityPickerOrBooleanRenderer },
   { tester: entityPickerOrStringTester, renderer: EntityPickerOrStringRenderer },
+  { tester: entityPickerOrEnumTester, renderer: EntityPickerOrEnumRenderer },
   { tester: secretPickerTester, renderer: SecretPickerRenderer },
   { tester: optionalStringTester, renderer: OptionalStringRenderer },
   { tester: boolOrStringTester, renderer: BoolOrStringRenderer },

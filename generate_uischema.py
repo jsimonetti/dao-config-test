@@ -247,12 +247,14 @@ def generate_uischema_for_property(prop_name: str, prop_schema: Dict[str, Any], 
         options["widgetFilter"] = prop_schema["x-ui-widget-filter"]
     if "x-docs-url" in prop_schema:
         options["docsUrl"] = prop_schema["x-docs-url"]
+    if "x-enum-values" in prop_schema:
+        options["enumValues"] = prop_schema["x-enum-values"]  # For FlexEnum
     
     # Preserve $ref type information for renderer detection
     # This survives $ref resolution and allows testers to identify custom types
     if "$ref" in prop_schema:
         ref_type = prop_schema["$ref"].split("/")[-1]  # Extract type name from $ref path
-        options["refType"] = ref_type  # e.g., "EntityId", "FlexInt", "SecretStr"
+        options["refType"] = ref_type  # e.g., "EntityId", "FlexInt", "SecretStr", "FlexEnum"
     
     # Add source location for debugging
     if source_class:
@@ -562,7 +564,8 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any], sou
             ("x-unit", "unit"),
             ("x-ui-widget", "widget"),
             ("x-ui-widget-filter", "widgetFilter"),
-            ("x-validation-hint", "validationHint")
+            ("x-validation-hint", "validationHint"),
+            ("x-enum-values", "enumValues")  # For FlexEnum
         ]:
             if x_key in prop_schema:
                 options[option_key] = prop_schema[x_key]
@@ -572,6 +575,10 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any], sou
         
         # For $ref, resolve and extract metadata
         if "$ref" in prop_schema:
+            # Preserve $ref type information for renderer detection
+            ref_type = prop_schema["$ref"].split("/")[-1]
+            options["refType"] = ref_type  # e.g., "EntityId", "FlexInt", "SecretStr"
+            
             resolved = resolve_ref(prop_schema["$ref"], defs)
             # Extract order from resolved if not in prop_schema
             if order == 999 and "x-order" in resolved:
@@ -583,7 +590,8 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any], sou
                 ("x-unit", "unit"),
                 ("x-ui-widget", "widget"),
                 ("x-ui-widget-filter", "widgetFilter"),
-                ("x-validation-hint", "validationHint")
+                ("x-validation-hint", "validationHint"),
+                ("x-enum-values", "enumValues")  # For FlexEnum
             ]:
                 if x_key in resolved and option_key not in options:
                     options[option_key] = resolved[x_key]
@@ -596,6 +604,10 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any], sou
             for option_item in prop_schema["anyOf"]:
                 if isinstance(option_item, dict) and option_item.get("type") != "null":
                     if "$ref" in option_item:
+                        # Preserve $ref type information
+                        ref_type = option_item["$ref"].split("/")[-1]
+                        options["refType"] = ref_type
+                        
                         resolved = resolve_ref(option_item["$ref"], defs)
                         # Extract order from resolved if not set
                         if order == 999 and "x-order" in resolved:
@@ -607,7 +619,8 @@ def generate_detail_uischema(item_def: Dict[str, Any], defs: Dict[str, Any], sou
                             ("x-unit", "unit"),
                             ("x-ui-widget", "widget"),
                             ("x-ui-widget-filter", "widgetFilter"),
-                            ("x-validation-hint", "validationHint")
+                            ("x-validation-hint", "validationHint"),
+                            ("x-enum-values", "enumValues")  # For FlexEnum
                         ]:
                             if x_key in resolved and option_key not in options:
                                 options[option_key] = resolved[x_key]

@@ -9,7 +9,7 @@ This module provides:
 """
 
 import re
-from typing import Any, ClassVar, Union
+from typing import Any, ClassVar, Optional, Union
 from pydantic import BaseModel, Field, TypeAdapter, field_validator, model_serializer, model_validator, ConfigDict
 from pydantic_core import core_schema as _core_schema
 
@@ -233,6 +233,102 @@ class FlexStr(FlexValue):
     """
 
     _resolve_type: ClassVar[type] = str
+
+
+class FlexEnum(FlexValue):
+    """FlexValue that resolves to ``str`` with enum constraints.
+    
+    Like FlexStr, but validates that non-entity values match allowed enum options.
+    Use for fields with predefined choices OR entity IDs.
+    
+    Usage:
+        strategy: FlexEnum = Field(
+            default=FlexEnum(
+                value="minimize cost",
+                enum_values=["minimize cost", "minimize consumption"]
+            ),
+            json_schema_extra={"x-enum-values": ["minimize cost", "minimize consumption"]}
+        )
+    
+    For automatic injection of enum_values from field metadata, inherit from
+    DAOConfigBaseModel in your configuration model (see below).
+    
+    Examples:
+        FlexEnum(value="minimize cost", enum_values=[...])      # Valid if in list
+        FlexEnum(value="sensor.strategy_mode", enum_values=[...])  # Valid entity ID
+    """
+    
+    _resolve_type: ClassVar[type] = str
+    enum_values: Optional[list[str]] = Field(default=None, exclude=True)
+    
+    @model_validator(mode='after')
+    def validate_enum_value(self):
+        """Validate that value is either an entity ID or in the allowed enum values."""
+        # Always allow entity IDs
+        if self.is_entity_id(self.value):
+            return self
+        
+        # If enum_values specified, validate against them
+        if self.enum_values is not None and self.value not in self.enum_values:
+            allowed = ', '.join(f"'{val}'" for val in self.enum_values)
+            raise ValueError(
+                f"Value '{self.value}' is not valid. Must be one of: {allowed}, "
+                f"or a Home Assistant entity ID (e.g., 'input_select.strategy')"
+            )
+        
+        return self
+    
+    @classmethod
+    def __get_pydantic_json_schema__(cls, core_schema, handler):
+        # Note: This generates the base schema. Enum values are added via
+        # json_schema_extra at the Field level, not here at class level.
+        return {
+            'anyOf': [{'type': 'string'}],  # Accept any string (enum values added by Field)
+            'x-help': 'Select from predefined values or use Home Assistant entity ID. '
+                      'Entity IDs are always valid.',
+        }
+
+
+class DAOConfigBaseModel(BaseModel):
+    """Base model for Day Ahead Optimizer configuration classes.
+    
+    Provides common validation and preprocessing logic for all DAO configuration models:
+    - Automatic enum_values injection for FlexEnum fields from json_schema_extra
+    - Future: additional DAO-specific validation and processing logic
+    
+    All DAO configuration models should inherit from this instead of BaseModel directly.
+    
+    Example:
+        class MyConfig(DAOConfigBaseModel):
+            strategy: FlexEnum = Field(
+                default=FlexEnum(value="minimize cost"),
+                json_schema_extra={"x-enum-values": ["minimize cost", "minimize consumption"]}
+            )
+    """
+    
+    @model_validator(mode='before')
+    @classmethod
+    def inject_flex_enum_values(cls, data):
+        """Automatically inject enum_values for all FlexEnum fields from their metadata."""
+        if not isinstance(data, dict):
+            return data
+        
+        # Iterate through all fields in the model
+        for field_name, field_info in cls.model_fields.items():
+            # Check if this field is annotated as FlexEnum
+            if field_info.annotation == FlexEnum and field_name in data:
+                # Extract enum values from field metadata
+                if field_info.json_schema_extra:
+                    enum_values = field_info.json_schema_extra.get('x-enum-values')
+                    if enum_values:
+                        value = data[field_name]
+                        # Inject enum_values into the data
+                        if isinstance(value, str):
+                            data[field_name] = {'value': value, 'enum_values': enum_values}
+                        elif isinstance(value, dict) and 'enum_values' not in value:
+                            value['enum_values'] = enum_values
+        
+        return data
 
 
 class SecretStr(BaseModel):

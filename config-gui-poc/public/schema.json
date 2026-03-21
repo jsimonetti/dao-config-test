@@ -923,6 +923,14 @@
       ],
       "x-help": "FlexValue enables dynamic configuration using Home Assistant entities. Instead of hardcoding values, reference HA entities that can change at runtime. System automatically detects and resolves entity IDs."
     },
+    "FlexEnum": {
+      "anyOf": [
+        {
+          "type": "string"
+        }
+      ],
+      "x-help": "Select from predefined values or use Home Assistant entity ID. Entity IDs are always valid."
+    },
     "FlexFloat": {
       "anyOf": [
         {
@@ -938,20 +946,6 @@
       "x-help": "FlexValue enables dynamic configuration using Home Assistant entities. Instead of hardcoding values, reference HA entities that can change at runtime. System automatically detects and resolves entity IDs."
     },
     "FlexInt": {
-      "anyOf": [
-        {
-          "type": "number"
-        },
-        {
-          "type": "string"
-        },
-        {
-          "type": "boolean"
-        }
-      ],
-      "x-help": "FlexValue enables dynamic configuration using Home Assistant entities. Instead of hardcoding values, reference HA entities that can change at runtime. System automatically detects and resolves entity IDs."
-    },
-    "FlexStr": {
       "anyOf": [
         {
           "type": "number"
@@ -2460,9 +2454,13 @@
       "x-ui-section": "Optimization"
     },
     "strategy": {
-      "$ref": "#/$defs/FlexStr",
+      "$ref": "#/$defs/FlexEnum",
       "default": "minimize cost",
       "description": "Optimization strategy (or HA entity ID returning the strategy string)",
+      "x-enum-values": [
+        "minimize cost",
+        "minimize consumption"
+      ],
       "x-order": 2,
       "x-ui-group": "DAO",
       "x-ui-section": "Optimization",
