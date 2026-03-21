@@ -12,10 +12,8 @@ import {
   Typography,
   IconButton,
   Tooltip,
-  Link,
 } from '@mui/material'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
 interface NumberRendererProps extends ControlProps {
   data: number | null | undefined

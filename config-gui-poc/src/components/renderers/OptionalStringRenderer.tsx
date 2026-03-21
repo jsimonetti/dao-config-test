@@ -3,7 +3,6 @@ import {
   ControlProps,
   rankWith,
   schemaMatches,
-  isVisible,
 } from '@jsonforms/core'
 import { withJsonFormsControlProps } from '@jsonforms/react'
 import {

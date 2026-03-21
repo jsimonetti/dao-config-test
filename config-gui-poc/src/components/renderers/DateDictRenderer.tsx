@@ -34,7 +34,6 @@ const DateDictRenderer: React.FC<DateDictRendererProps> = ({
   data,
   handleChange,
   path,
-  schema,
   label,
   description,
   uischema,
