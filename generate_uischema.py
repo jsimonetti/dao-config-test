@@ -68,6 +68,40 @@ def resolve_ref(ref: str, defs: Dict[str, Any]) -> Dict[str, Any]:
     return {}
 
 
+def rewrite_rule_scopes(rule: Any, parent_prop_path: str) -> Any:
+    """
+    Recursively rewrite scope paths in x-ui-rules for nested properties.
+    
+    When a model is nested (e.g., database_ha), its x-ui-rules contain relative
+    scope paths like "#/properties/engine". These need to be rewritten to absolute
+    paths like "#/properties/database_ha/properties/engine" for JSONForms to find them.
+    
+    Args:
+        rule: The x-ui-rules structure (can be dict, list, or primitive)
+        parent_prop_path: The parent property path (e.g., "database_ha")
+    
+    Returns:
+        The rule structure with rewritten scope paths
+    """
+    if isinstance(rule, dict):
+        result = {}
+        for key, value in rule.items():
+            if key == "scope" and isinstance(value, str) and value.startswith("#/properties/"):
+                # Rewrite the scope path to include the parent property
+                # "#/properties/engine" -> "#/properties/database_ha/properties/engine"
+                prop_path = value.replace("#/properties/", "")
+                result[key] = f"#/properties/{parent_prop_path}/properties/{prop_path}"
+            else:
+                # Recursively process nested structures
+                result[key] = rewrite_rule_scopes(value, parent_prop_path)
+        return result
+    elif isinstance(rule, list):
+        return [rewrite_rule_scopes(item, parent_prop_path) for item in rule]
+    else:
+        # Primitive value, return as-is
+        return rule
+
+
 def extract_x_ui_group_from_property(prop_schema: Dict[str, Any], defs: Dict[str, Any]) -> Tuple[str, int]:
     """
     Extract x-ui-group and x-order from a property schema.
@@ -713,7 +747,8 @@ def main():
         print("Generating schema from ConfigurationV0...")
     
     # Generate JSON Schema from root model
-    schema = ConfigurationV0.model_json_schema(mode='serialization')
+    # Use by_alias=False to get Python field names (with underscores) instead of aliases
+    schema = ConfigurationV0.model_json_schema(mode='serialization', by_alias=False)
     
     # Flatten Optional-style anyOf to prevent ANYOF tabs in JSONForms
     schema = flatten_optional_anyof(schema)
@@ -875,9 +910,9 @@ def main():
                     # Add source tracking
                     control["options"]["x-source"] = f"{source_class}.{prop_name}"
                     
-                    # Add rule if present
+                    # Add rule if present - rewrite scope paths for nested properties
                     if "x-ui-rules" in prop_schema:
-                        control["rule"] = prop_schema["x-ui-rules"]
+                        control["rule"] = rewrite_rule_scopes(prop_schema["x-ui-rules"], parent_prop_name)
                     
                     # Extract section for nested field
                     section_name, collapse_state = extract_section_info(prop_schema, defs, use_general_default=False)
@@ -956,9 +991,9 @@ def main():
                 # Add source tracking
                 control["options"]["x-source"] = f"{source_class}.{prop_name}"
                 
-                # Add rule if present
+                # Add rule if present - rewrite scope paths for nested properties
                 if "x-ui-rules" in prop_schema:
-                    control["rule"] = prop_schema["x-ui-rules"]
+                    control["rule"] = rewrite_rule_scopes(prop_schema["x-ui-rules"], parent_prop_name)
                 
                 # Extract section for nested field
                 section_name, collapse_state = extract_section_info(prop_schema, defs, use_general_default=False)

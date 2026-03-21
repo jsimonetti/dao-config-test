@@ -193,7 +193,14 @@ class DatabaseConfig(BaseModel):
         json_schema_extra={
             "x-help": "For SQLite: filename (e.g., 'day_ahead.db'). For MySQL/PostgreSQL: database name. At least one of db_path or database required for SQLite.",
             "x-ui-section": "DAO Database",
-            "x-validation-hint": "Filename for SQLite, database name for MySQL/PostgreSQL"
+            "x-validation-hint": "Filename for SQLite, database name for MySQL/PostgreSQL",
+            "x-ui-rules": {
+                "effect": "SHOW",
+                "condition": {
+                    "scope": "#/properties/engine",
+                    "schema": {"enum": ["mysql", "postgresql"]}
+                }
+            }
         }
     )
     
