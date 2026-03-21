@@ -316,8 +316,21 @@ const EntityListPickerRenderer: React.FC<ControlProps> = ({
 export const entityListPickerTester = rankWith(
   15, // High priority
   (uischema, schema) => {
-    // Check UISchema options for itemsRefType metadata (for arrays)
-    return schema?.type === 'array' && uischema.options?.itemsRefType === 'EntityId'
+    // For nested properties, JSONForms may pass the parent object's schema
+    // instead of the array property's schema. We rely on itemsRefType metadata
+    // which is set correctly during UISchema generation for array fields.
+    const hasItemsRefType = uischema.options?.itemsRefType === 'EntityId'
+    
+    // Debug logging
+    if (hasItemsRefType) {
+      console.log('[EntityListPickerRenderer] Matched!', {
+        itemsRefType: uischema.options?.itemsRefType,
+        schemaType: schema?.type
+      })
+    }
+    
+    // Match if itemsRefType is EntityId (indicates array of EntityId)
+    return hasItemsRefType
   }
 )
 

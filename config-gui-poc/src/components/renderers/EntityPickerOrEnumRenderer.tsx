@@ -73,9 +73,11 @@ const EntityPickerOrEnumRenderer: React.FC<EntityPickerOrEnumRendererProps> = ({
   const [open, setOpen] = useState(false)
   
   // Determine initial mode based on data
+  // Default to 'enum' mode unless data contains an entity ID (non-enum value)
   const isEnumValue = enumValues.includes(data)
+  const hasEntityId = data && !isEnumValue
   const [mode, setMode] = useState<'enum' | 'entity'>(
-    isEnumValue ? 'enum' : 'entity'
+    hasEntityId ? 'entity' : 'enum'
   )
 
   const handleModeChange = (_: React.MouseEvent, newMode: 'enum' | 'entity' | null) => {
@@ -169,8 +171,8 @@ const EntityPickerOrEnumRenderer: React.FC<EntityPickerOrEnumRendererProps> = ({
         size="small"
         sx={{ mb: 2 }}
       >
-        <ToggleButton value="enum">Preset Value</ToggleButton>
-        <ToggleButton value="entity">Entity ID</ToggleButton>
+        <ToggleButton value="enum">Select</ToggleButton>
+        <ToggleButton value="entity">Entity</ToggleButton>
       </ToggleButtonGroup>
 
       {mode === 'enum' ? (
@@ -244,7 +246,7 @@ const EntityPickerOrEnumRenderer: React.FC<EntityPickerOrEnumRendererProps> = ({
                 {...params}
                 placeholder="Select entity or type entity ID..."
                 size="small"
-                label="Entity ID"
+                label="Entity"
                 InputProps={{
                   ...params.InputProps,
                   endAdornment: (
